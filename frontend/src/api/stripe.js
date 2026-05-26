@@ -3,7 +3,10 @@ import { loadStripe } from "@stripe/stripe-js";
 export async function handleCheckout(plan) {
   console.log("Clicked plan:", plan);
 
-  const res = await fetch("http://localhost:5000/create-checkout-session", {
+  const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const res = await fetch(`${BACKEND_URL}/create-checkout-session`,  {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
