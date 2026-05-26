@@ -25,15 +25,7 @@ export default function Home() {
           Practice real interview questions, get instant feedback, and level up faster than everyone else.
         </motion.p>
 
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="mt-8 px-6 py-3 rounded-lg font-bold 
-          bg-gradient-to-r from-red-500 to-violet-600 
-          shadow-[0_0_25px_rgba(255,0,60,0.7)]"
-        >
-          Get Started
-        </motion.button>
+        
       </section>
 
       {/* 💎 FEATURES SECTION */}
