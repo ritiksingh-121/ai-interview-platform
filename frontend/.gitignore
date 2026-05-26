@@ -1,0 +1,19 @@
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+
+# backend
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/logs/
+backend/uploads/
+
+# common
+node_modules/
+*.log
+.vscode/
+.DS_Store
+.cache/
