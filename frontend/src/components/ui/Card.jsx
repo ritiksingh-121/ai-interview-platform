@@ -1,45 +1,22 @@
-import { forwardRef } from 'react';
+export default function Card({ variant = "default", hover = false, clickable = false, children, className = "", ...props }) {
+  const base = "rounded-xl transition-all duration-200";
 
-/**
- * Card - Premium card component with variants
- * @param {string} variant - 'default' | 'glass' | 'elevated'
- * @param {boolean} hover - Enable hover effects
- * @param {boolean} clickable - Add cursor and scale on active
- */
-const Card = forwardRef(function Card(
-  {
-    children,
-    variant = 'default',
-    hover = false,
-    clickable = false,
-    className = '',
-    ...props
-  },
-  ref
-) {
-  const baseClasses = 'rounded-2xl overflow-hidden transition-all duration-300 card-shine';
-
-  const variantClasses = {
-    default: 'bg-darkbg-card border border-white/5 shadow-medium',
-    glass: 'bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-medium',
-    elevated: 'bg-darkbg-elevated border border-white/10 shadow-heavy',
+  const variants = {
+    default: "bg-zinc-900 border border-zinc-800",
+    glass: "glass",
+    elevated: "bg-zinc-900 border border-zinc-700/50 shadow-xl shadow-black/30",
+    gradient: "bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 border border-zinc-800",
   };
 
-  const hoverClasses = hover
-    ? 'hover:border-white/15 hover:shadow-glow-sm hover:-translate-y-1 glow-border-hover'
-    : '';
-
-  const clickableClasses = clickable ? 'cursor-pointer active:scale-[0.99] select-none' : '';
+  const hoverStyles = hover ? "hover:bg-zinc-800 hover:border-zinc-600" : "";
+  const clickableStyles = clickable ? "cursor-pointer" : "";
 
   return (
     <div
-      ref={ref}
-      className={`${baseClasses} ${variantClasses[variant]} ${hoverClasses} ${clickableClasses} ${className}`}
+      className={`${base} ${variants[variant] || variants.default} ${hoverStyles} ${clickableStyles} ${className}`}
       {...props}
     >
       {children}
     </div>
   );
-});
-
-export default Card;
+}

@@ -1,20 +1,18 @@
-/**
- * Badge - Status badge component
- */
-export default function Badge({ children, variant = 'primary', className = '' }) {
-  const variantClasses = {
-    primary: 'bg-brand-500/10 text-brand-300 border-brand-500/20',
-    accent: 'bg-accent-500/10 text-accent-300 border-accent-500/20',
-    success: 'bg-success/10 text-success-light border-success/20',
-    warning: 'bg-warning/10 text-warning-light border-warning/20',
-    error: 'bg-error-500/10 text-error-light border-error-500/20',
-    neutral: 'bg-white/5 text-white/70 border-white/10',
+export default function Badge({ variant = "neutral", children, className = "" }) {
+  const base = "inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full select-none";
+
+  const variants = {
+    neutral: "bg-zinc-800 text-zinc-300 border border-zinc-700/50",
+    primary: "bg-pink-500/15 text-pink-300 border border-pink-500/25",
+    accent: "bg-purple-500/15 text-purple-300 border border-purple-500/25",
+    success: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25",
+    warning: "bg-amber-500/15 text-amber-300 border border-amber-500/25",
+    error: "bg-red-500/15 text-red-300 border border-red-500/25",
+    gradient: "bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-300 border border-pink-500/20",
   };
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border select-none ${variantClasses[variant]} ${className}`}
-    >
+    <span className={`${base} ${variants[variant] || variants.neutral} ${className}`}>
       {children}
     </span>
   );

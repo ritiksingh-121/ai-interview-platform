@@ -16,7 +16,7 @@ import OutreachHelper from './pages/OutreachHelper';
 
 function App() {
   return (
-    <div className="min-h-screen bg-darkbg overflow-x-hidden">
+    <div className="min-h-screen bg-zinc-950 overflow-x-hidden">
     <Navbar />
     <Routes>
       <Route path="/" element={<Home />}/>
