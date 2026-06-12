@@ -34,7 +34,7 @@ export default function Pricing() {
           >
             <Card
               variant={plan.highlight ? "elevated" : "glass"}
-              className={`p-8 w-full flex flex-col justify-between border relative ${
+              className={`p-5 sm:p-6 md:p-8 w-full flex flex-col justify-between border relative ${
                 plan.highlight
                   ? "border-pink-500/30 shadow-glow"
                   : "border-white/5"

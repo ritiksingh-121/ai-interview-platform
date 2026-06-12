@@ -108,12 +108,12 @@ Write a ${platform} outreach message to ${recipientName} to ${goal.replace("_", 
               <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                 Platform
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {platforms.map((p) => (
                   <button
                     key={p.value}
                     onClick={() => setPlatform(p.value)}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all duration-300 cursor-pointer ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold border transition-all duration-300 cursor-pointer ${
                       platform === p.value
                         ? "bg-accent-500/15 border-accent-500/40 text-accent-300"
                         : "bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:border-white/20"
@@ -129,12 +129,12 @@ Write a ${platform} outreach message to ${recipientName} to ${goal.replace("_", 
               <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                 Goal
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {goals.map((g) => (
                   <button
                     key={g.value}
                     onClick={() => setGoal(g.value)}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all duration-300 cursor-pointer ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold border transition-all duration-300 cursor-pointer ${
                       goal === g.value
                         ? "bg-accent-500/15 border-accent-500/40 text-accent-300"
                         : "bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:border-white/20"
@@ -190,7 +190,7 @@ Write a ${platform} outreach message to ${recipientName} to ${goal.replace("_", 
                 value={yourBackground}
                 onChange={(e) => setYourBackground(e.target.value)}
                 placeholder="Briefly describe your current role, experience, and what you're looking for..."
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-3 rounded-lg bg-darkbg-input border border-white/10 text-white placeholder-white/25 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-accent-500/40 focus:ring-accent-500/15 hover:border-white/20 resize-y text-sm leading-relaxed"
               />
             </div>
@@ -217,7 +217,7 @@ Write a ${platform} outreach message to ${recipientName} to ${goal.replace("_", 
             <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
               Generated Message
             </label>
-            <Card variant="glass" className="p-6 min-h-[360px] flex flex-col">
+            <Card variant="glass" className="p-4 sm:p-6 min-h-[250px] sm:min-h-[360px] flex flex-col">
               {loading ? (
                 <div className="flex-1 flex items-center justify-center">
                   <LoadingSpinner size="lg" />

@@ -102,7 +102,7 @@ export default function STARBuilder() {
                 value={situation}
                 onChange={(e) => setSituation(e.target.value)}
                 placeholder="Describe the context and background..."
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-3 rounded-lg bg-darkbg-input border border-white/10 text-white placeholder-white/25 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-accent-500/40 focus:ring-accent-500/15 hover:border-white/20 resize-y text-sm leading-relaxed"
               />
             </div>
@@ -114,7 +114,7 @@ export default function STARBuilder() {
                 value={task}
                 onChange={(e) => setTask(e.target.value)}
                 placeholder="What was your responsibility or goal?"
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-3 rounded-lg bg-darkbg-input border border-white/10 text-white placeholder-white/25 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-accent-500/40 focus:ring-accent-500/15 hover:border-white/20 resize-y text-sm leading-relaxed"
               />
             </div>
@@ -126,7 +126,7 @@ export default function STARBuilder() {
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
                 placeholder="What specific steps did you take?"
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-3 rounded-lg bg-darkbg-input border border-white/10 text-white placeholder-white/25 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-accent-500/40 focus:ring-accent-500/15 hover:border-white/20 resize-y text-sm leading-relaxed"
               />
             </div>
@@ -138,7 +138,7 @@ export default function STARBuilder() {
                 value={result}
                 onChange={(e) => setResult(e.target.value)}
                 placeholder="What was the outcome? Use measurable data if possible."
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-3 rounded-lg bg-darkbg-input border border-white/10 text-white placeholder-white/25 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-accent-500/40 focus:ring-accent-500/15 hover:border-white/20 resize-y text-sm leading-relaxed"
               />
             </div>
@@ -164,7 +164,7 @@ export default function STARBuilder() {
             <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
               AI Analysis
             </label>
-            <Card variant="glass" className="p-6 min-h-[400px]">
+            <Card variant="glass" className="p-4 sm:p-6 min-h-[300px] sm:min-h-[400px]">
               {loading ? (
                 <div className="flex items-center justify-center h-full py-16">
                   <LoadingSpinner size="lg" />

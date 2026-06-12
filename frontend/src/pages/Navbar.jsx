@@ -68,6 +68,7 @@ function Navbar() {
   const isToolsActive = () => ["/resume", "/coverletter", "/star", "/outreach"].includes(location.pathname);
 
   return (
+    <>
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
@@ -450,6 +451,67 @@ function Navbar() {
         </div>
       </div>
     </nav>
+
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-darkbg-elevated/95 backdrop-blur-2xl border-t border-white/5 safe-area-bottom">
+        <div className="flex items-center justify-around px-2 py-1.5">
+          <Link
+            to="/"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-0 ${
+              isActive("/")
+                ? "text-accent-400"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span className="text-[10px] font-semibold tracking-wide truncate">Home</span>
+          </Link>
+
+          <Link
+            to={user ? "/service" : "/login"}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-0 ${
+              isActive("/service")
+                ? "text-accent-400"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span className="text-[10px] font-semibold tracking-wide truncate">Dashboard</span>
+          </Link>
+
+          <Link
+            to={user ? "/interview" : "/login"}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-0 ${
+              isActive("/interview")
+                ? "text-accent-400"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            <span className="text-[10px] font-semibold tracking-wide truncate">Interview</span>
+          </Link>
+
+          <Link
+            to="/pricing"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-0 ${
+              isActive("/pricing")
+                ? "text-accent-400"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-[10px] font-semibold tracking-wide truncate">Pricing</span>
+          </Link>
+        </div>
+      </div>
+    </>
   );
 }
 

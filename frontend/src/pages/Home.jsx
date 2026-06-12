@@ -28,7 +28,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-darkbg text-white overflow-x-hidden selection:bg-accent-500/30 selection:text-white">
+    <div className="min-h-screen bg-darkbg text-white overflow-x-hidden selection:bg-accent-500/30 selection:text-white pb-16 md:pb-0">
       {/* Glow Backdrops */}
       <div className="absolute top-[10vh] left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent-500/10 rounded-full blur-[120px] pointer-events-none z-0" />
       <div className="absolute top-[80vh] right-10 w-[400px] h-[200px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none z-0" />
@@ -101,34 +101,34 @@ export default function Home() {
           className="mt-16 w-full max-w-5xl rounded-2xl border border-white/10 bg-[#070709] p-2 shadow-2xl relative"
         >
           <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-accent-500 rounded-2xl opacity-10 blur-xl group-hover:opacity-20 transition-opacity" />
-          <div className="rounded-xl overflow-hidden border border-white/5 bg-black/40 aspect-[16/9] flex items-center justify-center p-6 relative">
+          <div className="rounded-xl overflow-hidden border border-white/5 bg-black/40 aspect-[16/9] sm:aspect-[16/9] flex items-center justify-center p-3 sm:p-6 relative">
             {/* Mock Header */}
-            <div className="absolute top-0 left-0 right-0 h-10 border-b border-white/5 bg-black/60 flex items-center px-4 justify-between">
+            <div className="absolute top-0 left-0 right-0 h-8 sm:h-10 border-b border-white/5 bg-black/60 flex items-center px-3 sm:px-4 justify-between">
               <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-500/60" />
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-500/60" />
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-500/60" />
               </div>
-              <span className="text-xs text-white/40">AI Interview Workspace</span>
+              <span className="text-[10px] sm:text-xs text-white/40 hidden sm:inline">AI Interview Workspace</span>
               <span className="w-4" />
             </div>
 
             {/* Mock layout content */}
-            <div className="w-full h-full pt-8 flex gap-4 text-left">
-              <div className="w-1/3 border-r border-white/5 pr-4 flex flex-col justify-center gap-3">
-                <div className="h-6 w-20 rounded bg-white/5 animate-pulse" />
-                <div className="h-10 w-full rounded-lg bg-white/5 animate-pulse" />
-                <div className="h-28 w-full rounded-lg bg-white/5 animate-pulse" />
+            <div className="w-full h-full pt-6 sm:pt-8 flex gap-2 sm:gap-4 text-left">
+              <div className="w-1/3 border-r border-white/5 pr-2 sm:pr-4 flex flex-col justify-center gap-2 sm:gap-3">
+                <div className="h-4 sm:h-6 w-14 sm:w-20 rounded bg-white/5 animate-pulse" />
+                <div className="h-8 sm:h-10 w-full rounded-lg bg-white/5 animate-pulse" />
+                <div className="h-20 sm:h-28 w-full rounded-lg bg-white/5 animate-pulse" />
               </div>
-              <div className="flex-1 pl-4 flex flex-col justify-between py-2">
-                <div className="space-y-2">
-                  <div className="h-4 w-1/3 rounded bg-white/5" />
-                  <div className="h-4 w-2/3 rounded bg-white/5" />
-                  <div className="h-4 w-1/2 rounded bg-white/5" />
+              <div className="flex-1 pl-2 sm:pl-4 flex flex-col justify-between py-1 sm:py-2">
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="h-3 sm:h-4 w-1/3 rounded bg-white/5" />
+                  <div className="h-3 sm:h-4 w-2/3 rounded bg-white/5" />
+                  <div className="h-3 sm:h-4 w-1/2 rounded bg-white/5" />
                 </div>
-                <div className="h-12 w-full rounded-lg border border-white/10 bg-white/5 flex items-center px-4 justify-between">
-                  <div className="h-4 w-1/3 rounded bg-white/10" />
-                  <div className="h-6 w-16 rounded bg-brand-500/20 border border-brand-500/30" />
+                <div className="h-8 sm:h-12 w-full rounded-lg border border-white/10 bg-white/5 flex items-center px-2 sm:px-4 justify-between">
+                  <div className="h-3 sm:h-4 w-1/4 sm:w-1/3 rounded bg-white/10" />
+                  <div className="h-4 sm:h-6 w-12 sm:w-16 rounded bg-brand-500/20 border border-brand-500/30" />
                 </div>
               </div>
             </div>

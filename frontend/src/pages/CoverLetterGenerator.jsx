@@ -119,7 +119,7 @@ export default function CoverLetterGenerator() {
                 value={skills}
                 onChange={(e) => setSkills(e.target.value)}
                 placeholder="e.g. React, TypeScript, System Design, Team Leadership"
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-3 rounded-lg bg-darkbg-input border border-white/10 text-white placeholder-white/25 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-accent-500/40 focus:ring-accent-500/15 hover:border-white/20 resize-y text-sm leading-relaxed"
               />
             </div>
@@ -127,12 +127,12 @@ export default function CoverLetterGenerator() {
               <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                 Tone
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {tones.map((t) => (
                   <button
                     key={t.value}
                     onClick={() => setTone(t.value)}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all duration-300 cursor-pointer ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold border transition-all duration-300 cursor-pointer ${
                       tone === t.value
                         ? "bg-accent-500/15 border-accent-500/40 text-accent-300"
                         : "bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:border-white/20"
@@ -165,14 +165,14 @@ export default function CoverLetterGenerator() {
             <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
               Generated Cover Letter
             </label>
-            <Card variant="glass" className="p-6 min-h-[360px] flex flex-col">
+            <Card variant="glass" className="p-4 sm:p-6 min-h-[250px] sm:min-h-[360px] flex flex-col">
               {loading ? (
                 <div className="flex-1 flex items-center justify-center">
                   <LoadingSpinner size="lg" />
                 </div>
               ) : coverLetter ? (
                 <>
-                  <div className="flex-1 whitespace-pre-wrap text-sm text-white/80 leading-relaxed font-serif">
+                  <div className="flex-1 whitespace-pre-wrap text-xs sm:text-sm text-white/80 leading-relaxed font-serif">
                     {coverLetter}
                   </div>
                   <div className="mt-4 pt-4 border-t border-white/5 flex justify-end">

@@ -60,19 +60,19 @@ export default function Dashboard() {
       <div className="absolute bottom-[10vh] right-10 w-[400px] h-[200px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       {/* 🔥 HERO HEADER */}
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5">
+      <header className="mb-8 sm:mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 pb-6 sm:pb-8 border-b border-white/5">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
             Welcome back, {userData.name} 👋
           </h1>
-          <p className="text-white/60 mt-1.5 text-sm sm:text-base">
+          <p className="text-white/60 mt-1.5 text-xs sm:text-sm md:text-base">
             Continue your mock training and assess your interview readiness level.
           </p>
         </div>
         <Button
           variant="primary"
           onClick={() => navigate("/interview")}
-          className="gap-2 shrink-0 animate-pulse-slow"
+          className="gap-2 shrink-0 animate-pulse-slow w-full sm:w-auto justify-center"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -90,10 +90,10 @@ export default function Dashboard() {
       >
         {stats.map((stat, idx) => (
           <motion.div variants={itemVariants} key={idx}>
-            <Card variant="glass" className="p-6 relative">
-              <span className="text-2xl absolute top-6 right-6 opacity-80">{stat.icon}</span>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{stat.label}</p>
-              <h3 className="text-3xl font-bold mt-3 mb-1.5">{stat.value}</h3>
+            <Card variant="glass" className="p-4 sm:p-6 relative">
+              <span className="text-xl sm:text-2xl absolute top-4 sm:top-6 right-4 sm:right-6 opacity-80">{stat.icon}</span>
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/50">{stat.label}</p>
+              <h3 className="text-xl sm:text-3xl font-bold mt-2 sm:mt-3 mb-1 sm:mb-1.5">{stat.value}</h3>
               <p className="text-xs text-white/40 flex items-center gap-1">
                 <span className="text-success-light font-bold">✔</span> {stat.sub}
               </p>
@@ -143,9 +143,9 @@ export default function Dashboard() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* RECENT ACTIVITY TABLE */}
         <section className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold tracking-tight">Recent Sessions</h2>
-            <Badge variant="neutral">History Tracking Enabled</Badge>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight">Recent Sessions</h2>
+            <Badge variant="neutral" className="self-start sm:self-auto">History Tracking Enabled</Badge>
           </div>
 
           <Card variant="default" className="border border-white/5 overflow-hidden">

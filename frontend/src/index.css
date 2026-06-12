@@ -218,6 +218,8 @@
   padding-top: 72px;
 }
 
+
+
 /* Custom premium design system classes */
 .card-shine {
   position: relative;
@@ -293,3 +295,4 @@
 .light .btn-gradient-text {
   color: #1d1d1f;
 }
+
