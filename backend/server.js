@@ -5,6 +5,7 @@ import Stripe from "stripe";
 
 import interviewRoutes from "./routes/interviewRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
+import completionRoutes from "./routes/completionRoutes.js";
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use(express.json());
 // Routes
 app.use("/api/interview", interviewRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/completion", completionRoutes);
 
 // ========================================
 // CREATE CHECKOUT SESSION

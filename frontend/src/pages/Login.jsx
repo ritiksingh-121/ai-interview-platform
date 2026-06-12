@@ -3,6 +3,9 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
 
 export default function Login() {
   const [form, setForm] = useState({
@@ -12,7 +15,6 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
   function handleChange(e) {
@@ -29,7 +31,7 @@ export default function Login() {
     }
 
     if (!form.email.includes("@")) {
-      setError("Enter a valid email");
+      setError("Enter a valid email address");
       return;
     }
 
@@ -42,7 +44,7 @@ export default function Login() {
       setLoading(true);
       await signInWithEmailAndPassword(auth, form.email, form.password);
       navigate("/service");
-    } catch {
+    } catch (err) {
       setError("Invalid email or password");
     } finally {
       setLoading(false);
@@ -50,140 +52,102 @@ export default function Login() {
   }
 
   return (
-    <div style={container}>
-      
-      {/* LEFT PANEL */}
-      <div style={leftPanel}>
-        <h1 style={logo}>AI Interview</h1>
-        <p style={tagline}>
-          Practice smarter. Crack interviews faster.
-        </p>
+    <div className="min-h-screen bg-darkbg flex flex-col md:flex-row text-white pt-16">
+      {/* LEFT SIDE - TECHNICAL BRANDING */}
+      <div className="flex-1 flex flex-col justify-center items-center p-8 bg-gradient-to-br from-darkbg via-[#0b0a0e] to-[#0c1824]/20 border-r border-white/5 relative overflow-hidden min-h-[30vh] md:min-h-screen">
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-accent-500/5 rounded-full blur-[80px] pointer-events-none" />
+        
+        <div className="max-w-md space-y-6 text-center md:text-left relative z-10">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-500 to-accent-500 flex items-center justify-center mx-auto md:mx-0 shadow-lg shadow-brand-500/10">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+            Practice smarter.<br />Crack interviews faster.
+          </h1>
+          <p className="text-sm text-white/50 leading-relaxed max-w-sm">
+            Experience real-time AI simulations, review code optimizations, and get professional behavioral scoring instantly.
+          </p>
+
+          {/* Micro Terminal Mockup */}
+          <div className="hidden md:block rounded-xl border border-white/5 bg-black/40 p-4 font-mono text-xs text-white/40 space-y-1.5 shadow-inner">
+            <p className="text-accent-400">$ login ai-interview</p>
+            <p className="text-white/60">● Authenticating session tokens...</p>
+            <p className="text-brand-400">● Session established. Redirecting...</p>
+          </div>
+        </div>
       </div>
 
-      {/* RIGHT PANEL */}
-      <motion.form
-        onSubmit={handleLogin}
-        initial={{ opacity: 0, x: 40 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}
-        style={formStyle}
-      >
-        <h2 style={title}>Welcome Back</h2>
-        <p style={subtitle}>Login to continue</p>
+      {/* RIGHT SIDE - LOGIN FORM */}
+      <div className="flex-1 flex justify-center items-center p-6 sm:p-12 md:p-20 relative">
+        <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md z-10"
+        >
+          <Card variant="glass" className="p-8 sm:p-10 shadow-2xl relative">
+            <div className="mb-8 text-center md:text-left">
+              <h2 className="text-2xl font-bold text-white tracking-tight">Welcome Back</h2>
+              <p className="text-sm text-white/50 mt-1.5">Login to access your dashboard</p>
+            </div>
 
-        {error && <p style={errorText}>{error}</p>}
+            <form onSubmit={handleLogin} className="space-y-5">
+              <Input
+                label="Email address"
+                name="email"
+                type="email"
+                placeholder="john@example.com"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
 
-        <input
-          name="email"
-          placeholder="Email address"
-          onChange={handleChange}
-          style={inputStyle}
-        />
+              <Input
+                label="Password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
 
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          onChange={handleChange}
-          style={inputStyle}
-        />
+              {error && (
+                <div className="p-3 rounded-lg bg-error-500/10 border border-error-500/20 text-xs text-error-light flex items-start gap-2 animate-fade-in">
+                  <svg className="w-4 h-4 shrink-0 text-error mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
 
-        <button type="submit" style={buttonStyle} disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={loading}
+                className="w-full mt-4"
+              >
+                Login
+              </Button>
+            </form>
 
-        <p style={footerText}>
-          Don’t have an account?{" "}
-          <span style={link} onClick={() => navigate("/signup")}>
-            Sign up
-          </span>
-        </p>
-      </motion.form>
+            <div className="mt-8 pt-6 border-t border-white/5 text-center text-xs text-white/50">
+              Don’t have an account?{" "}
+              <span
+                onClick={() => navigate("/signup")}
+                className="text-accent-400 hover:text-accent-300 font-semibold cursor-pointer transition-colors"
+              >
+                Sign up
+              </span>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 }
-const container = {
-  minHeight: "100vh",
-  display: "flex",
-  flexWrap: "wrap",
-  fontFamily: "sans-serif"
-};
-
-const leftPanel = {
-  flex: "1 1 400px",
-  minHeight: "40vh",
-  background: "linear-gradient(135deg, #4f46e5, #9333ea)",
-  color: "#fff",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  padding: "20px"
-};
-
-const logo = {
-  fontSize: "36px",
-  fontWeight: "bold"
-};
-
-const tagline = {
-  marginTop: "10px",
-  opacity: 0.8,
-  textAlign: "center"
-};
-
-const formStyle = {
-  flex: "1 1 400px",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  padding: "40px",
-  background: "#fff"
-};
-
-const title = {
-  fontSize: "26px",
-  fontWeight: "bold"
-};
-
-const subtitle = {
-  marginBottom: "20px",
-  color: "#666"
-};
-
-const inputStyle = {
-  padding: "12px",
-  marginBottom: "15px",
-  borderRadius: "8px",
-  border: "1px solid #ddd",
-  fontSize: "14px"
-};
-
-const buttonStyle = {
-  padding: "12px",
-  borderRadius: "8px",
-  border: "none",
-  background: "#4f46e5",
-  color: "#fff",
-  fontWeight: "bold",
-  cursor: "pointer",
-  opacity: 1
-};
-
-const footerText = {
-  marginTop: "15px",
-  fontSize: "14px",
-  color: "#666"
-};
-
-const link = {
-  color: "#4f46e5",
-  cursor: "pointer",
-  fontWeight: "500"
-};
-
-const errorText = {
-  color: "red",
-  fontSize: "13px",
-  marginBottom: "10px"
-};
