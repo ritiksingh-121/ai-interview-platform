@@ -5,22 +5,22 @@ export default function MessageBubble({ msg }) {
 
   return (
     <div
-      className={`flex flex-col gap-1.5 max-w-[85%] sm:max-w-xl animate-scale-in ${
+      className={`flex flex-col gap-1 max-w-[92%] sm:max-w-xl animate-scale-in ${
         isUser ? "ml-auto items-end" : "mr-auto items-start"
       }`}
     >
-      <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 px-1 select-none">
-        {isUser ? "Candidate" : "AI Interviewer"}
+      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/40 px-1 select-none">
+        {isUser ? "You" : "AI"}
       </span>
 
       <div
-        className={`p-4 rounded-2xl border shadow-sm transition-all duration-300 ${
+        className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border shadow-sm transition-all duration-300 ${
           isUser
             ? "bg-accent-500/10 border-accent-500/25 text-white rounded-tr-sm"
             : "bg-darkbg-card border-white/10 text-white/90 rounded-tl-sm"
         }`}
       >
-        <div className="text-sm leading-relaxed max-w-none">
+        <div className="text-xs sm:text-sm leading-relaxed max-w-none">
           <ReactMarkdown
             components={{
               p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
