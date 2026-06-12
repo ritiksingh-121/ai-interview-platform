@@ -145,6 +145,7 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
   body {
@@ -216,6 +217,14 @@
 
 @utility pt-safe {
   padding-top: 72px;
+}
+
+@utility pb-safe {
+  padding-bottom: 68px;
+}
+
+@utility pb-safe-bottom {
+  padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
 }
 
 

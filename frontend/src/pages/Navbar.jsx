@@ -72,12 +72,12 @@ function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-darkbg/75 backdrop-blur-xl border-b border-white/5 py-3 shadow-lg shadow-black/40"
-          : "bg-transparent py-5"
+          ? "bg-darkbg/80 backdrop-blur-xl border-b border-white/5 py-3 shadow-lg shadow-black/40"
+          : "bg-darkbg/60 backdrop-blur-sm py-4 sm:py-5"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-11 sm:h-12">
           {/* Logo */}
           <Link
             to="/"
@@ -261,24 +261,24 @@ function Navbar() {
 
           {/* Mobile Hamburger menu */}
           <button
-            className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-white hover:bg-white/10 transition-colors"
+            className="md:hidden w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-white hover:bg-white/10 active:scale-95 transition-all duration-200"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            <div className="relative w-5 h-3.5">
+            <div className="relative w-4.5 h-3 sm:w-5 sm:h-3.5">
               <span
-                className={`absolute left-0 w-full h-0.5 bg-white transition-all duration-300 rounded ${
-                  menuOpen ? "top-1.5 rotate-45" : "top-0"
+                className={`absolute left-0 w-full h-[1.5px] sm:h-0.5 bg-white transition-all duration-300 rounded-full ${
+                  menuOpen ? "top-1.5 sm:top-1.5 rotate-45" : "top-0"
                 }`}
               />
               <span
-                className={`absolute left-0 top-1.5 w-full h-0.5 bg-white transition-all duration-300 rounded ${
+                className={`absolute left-0 top-1.5 sm:top-1.5 w-full h-[1.5px] sm:h-0.5 bg-white transition-all duration-300 rounded-full ${
                   menuOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"
                 }`}
               />
               <span
-                className={`absolute left-0 w-full h-0.5 bg-white transition-all duration-300 rounded ${
-                  menuOpen ? "top-1.5 -rotate-45" : "top-3"
+                className={`absolute left-0 w-full h-[1.5px] sm:h-0.5 bg-white transition-all duration-300 rounded-full ${
+                  menuOpen ? "top-1.5 sm:top-1.5 -rotate-45" : "top-3 sm:top-3"
                 }`}
               />
             </div>
@@ -300,13 +300,13 @@ function Navbar() {
         />
 
         <div
-          className={`absolute top-16 left-0 right-0 bg-darkbg-elevated/95 backdrop-blur-2xl border-b border-white/5 transition-all duration-300 ${
+          className={`absolute top-14 sm:top-16 left-0 right-0 bg-darkbg-elevated/95 backdrop-blur-2xl border-b border-white/10 shadow-2xl shadow-black/60 transition-all duration-300 ease-out ${
             menuOpen
               ? "translate-y-0 opacity-100"
-              : "-translate-y-4 opacity-0"
+              : "-translate-y-4 opacity-0 pointer-events-none"
           }`}
         >
-          <div className="px-6 py-8 space-y-4 max-w-7xl mx-auto overflow-y-auto max-h-[80vh] no-scrollbar">
+          <div className="px-4 sm:px-6 py-6 sm:py-8 space-y-3 sm:space-y-4 max-w-7xl mx-auto overflow-y-auto max-h-[calc(100dvh-3.5rem)] no-scrollbar">
             <Link
               to="/"
               className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-semibold tracking-wide transition-all ${
@@ -452,7 +452,7 @@ function Navbar() {
       </div>
     </nav>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-darkbg-elevated/95 backdrop-blur-2xl border-t border-white/5 safe-area-bottom">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-darkbg-elevated/95 backdrop-blur-2xl border-t border-white/5" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex items-center justify-around px-2 py-1.5">
           <Link
             to="/"

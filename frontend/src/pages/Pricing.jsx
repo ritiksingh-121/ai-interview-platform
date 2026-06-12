@@ -6,9 +6,9 @@ import Badge from "../components/ui/Badge";
 
 export default function Pricing() {
   return (
-    <div className="min-h-screen bg-darkbg text-white py-28 px-6 relative selection:bg-accent-500/30">
-      {/* Glow Backdrops */}
-      <div className="absolute top-[20vh] left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+    <div className="min-h-screen bg-darkbg text-white pt-24 pb-safe px-4 sm:px-6 relative selection:bg-accent-500/30">
+      {/* Glow Backdrops - hidden on mobile */}
+      <div className="hidden md:block absolute top-[20vh] left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
 
       {/* Title block */}
       <div className="text-center mb-16 max-w-2xl mx-auto">

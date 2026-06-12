@@ -72,9 +72,9 @@ export default function STARBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-darkbg text-white pt-24 pb-16 px-6 max-w-7xl mx-auto selection:bg-accent-500/30">
-      <div className="absolute top-[10vh] left-10 w-[500px] h-[250px] bg-accent-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
-      <div className="absolute bottom-[10vh] right-10 w-[400px] h-[200px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+    <div className="min-h-screen bg-darkbg text-white pt-24 pb-safe px-4 sm:px-6 max-w-7xl mx-auto selection:bg-accent-500/30">
+      <div className="hidden md:block absolute top-[10vh] left-10 w-[500px] h-[250px] bg-accent-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="hidden md:block absolute bottom-[10vh] right-10 w-[400px] h-[200px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       <motion.div
         variants={containerVariants}

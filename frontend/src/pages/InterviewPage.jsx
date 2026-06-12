@@ -275,7 +275,7 @@ export default function InterviewPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-darkbg text-white overflow-hidden selection:bg-accent-500/30">
+    <div className="h-dvh flex flex-col bg-darkbg text-white overflow-x-hidden selection:bg-accent-500/30">
       {/* Sleek header */}
       <header className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5 bg-darkbg-elevated z-10 shrink-0 mt-16">
         <div className="flex flex-wrap items-center gap-2 sm:gap-4">

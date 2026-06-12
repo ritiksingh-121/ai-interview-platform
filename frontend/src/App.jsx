@@ -16,7 +16,7 @@ import OutreachHelper from './pages/OutreachHelper';
 
 function App() {
   return (
-    <>
+    <div className="min-h-screen bg-darkbg overflow-x-hidden">
     <Navbar />
     <Routes>
       <Route path="/" element={<Home />}/>
@@ -31,7 +31,7 @@ function App() {
       <Route path="/star" element={<ProtectedRoute><STARBuilder/></ProtectedRoute>}/>
       <Route path="/outreach" element={<ProtectedRoute><OutreachHelper/></ProtectedRoute>}/>
     </Routes>
-    </>
+    </div>
   )
 }
 

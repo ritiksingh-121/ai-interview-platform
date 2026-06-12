@@ -54,10 +54,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-darkbg text-white pt-24 pb-16 px-6 max-w-7xl mx-auto selection:bg-accent-500/30">
-      {/* Glow Backdrops */}
-      <div className="absolute top-[10vh] left-10 w-[500px] h-[250px] bg-accent-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
-      <div className="absolute bottom-[10vh] right-10 w-[400px] h-[200px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+    <div className="min-h-screen bg-darkbg text-white pt-24 pb-safe px-4 sm:px-6 max-w-7xl mx-auto selection:bg-accent-500/30">
+      {/* Glow Backdrops - hidden on mobile */}
+      <div className="hidden md:block absolute top-[10vh] left-10 w-[500px] h-[250px] bg-accent-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="hidden md:block absolute bottom-[10vh] right-10 w-[400px] h-[200px] bg-brand-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       {/* 🔥 HERO HEADER */}
       <header className="mb-8 sm:mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 pb-6 sm:pb-8 border-b border-white/5">
