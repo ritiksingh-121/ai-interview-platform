@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
+import ScoreGauge from "../components/ui/ScoreGauge";
 import { LoadingSpinner } from "../components/ui/Loading";
 import { getCompletion, safeParseJSON } from "../api/api";
 
@@ -54,58 +55,143 @@ export default function STARBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-24 pb-safe px-4 sm:px-6 max-w-7xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">STAR Story Builder</h1>
-        <p className="text-sm text-zinc-400 mt-2 max-w-2xl">Build, refine, and score behavioral interview stories using the Situation-Task-Action-Result format.</p>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-32 pb-safe px-4 sm:px-8 max-w-7xl mx-auto space-y-10">
+      {/* HEADER */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+        <Badge variant="cyan" className="px-3 py-1 uppercase tracking-wider text-[10px]">
+          🎯 Behavioral Story Coach
+        </Badge>
+        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">STAR Story Builder</h1>
+        <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+          Refine your behavioral experience stories using the Situation-Task-Action-Result methodology. Receive real-time AI scoring and improved narrative scripts.
+        </p>
       </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-8">
-        <div className="space-y-5">
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* INPUT FORM */}
+        <Card variant="glass" className="p-6 sm:p-8 space-y-5">
           <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2"><Badge variant="primary" className="mr-2">S</Badge> Situation</label>
-            <textarea value={situation} onChange={(e) => setSituation(e.target.value)} placeholder="Describe the context and background..." rows={3} className="w-full px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 resize-y leading-relaxed" />
+            <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">
+              S — Situation (Context & Challenge)
+            </label>
+            <textarea
+              value={situation}
+              onChange={(e) => setSituation(e.target.value)}
+              placeholder="Describe the company context, team setup, and specific project problem..."
+              rows={2}
+              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 leading-relaxed"
+            />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2"><Badge variant="warning" className="mr-2">T</Badge> Task</label>
-            <textarea value={task} onChange={(e) => setTask(e.target.value)} placeholder="What was your responsibility or goal?" rows={3} className="w-full px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 resize-y leading-relaxed" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2"><Badge variant="primary" className="mr-2">A</Badge> Action</label>
-            <textarea value={action} onChange={(e) => setAction(e.target.value)} placeholder="What specific steps did you take?" rows={3} className="w-full px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 resize-y leading-relaxed" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2"><Badge variant="success" className="mr-2">R</Badge> Result</label>
-            <textarea value={result} onChange={(e) => setResult(e.target.value)} placeholder="What was the outcome? Use measurable data if possible." rows={3} className="w-full px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 resize-y leading-relaxed" />
-          </div>
-          <Button variant="gradient" onClick={handleAnalyze} loading={loading} disabled={loading}>Analyze STAR Story</Button>
-          {error && <p className="text-xs text-red-400 flex items-center gap-1.5"><svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{error}</p>}
-        </div>
 
-        <div>
-          <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">AI Analysis</label>
-          <Card variant="glass" className="p-4 sm:p-6 min-h-[300px] sm:min-h-[400px]">
+          <div>
+            <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">
+              T — Task (Your Responsibility)
+            </label>
+            <textarea
+              value={task}
+              onChange={(e) => setTask(e.target.value)}
+              placeholder="What was your specific goal or assignment in this situation?"
+              rows={2}
+              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 leading-relaxed"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">
+              A — Action (Steps You Personally Took)
+            </label>
+            <textarea
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
+              placeholder="Detail the technical decisions, code implementations, or leadership actions..."
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 leading-relaxed"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">
+              R — Result (Measurable Outcome & Impact)
+            </label>
+            <textarea
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              placeholder="What changed? Quantify metric improvements (e.g. reduced latency by 35%)..."
+              rows={2}
+              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 leading-relaxed"
+            />
+          </div>
+
+          <Button
+            variant="green"
+            size="lg"
+            onClick={handleAnalyze}
+            loading={loading}
+            disabled={loading}
+            className="w-full justify-center uppercase tracking-wider text-xs py-3.5"
+          >
+            Analyze & Score STAR Story
+          </Button>
+
+          {error && <p className="text-xs text-red-400">⚠️ {error}</p>}
+        </Card>
+
+        {/* OUTPUT ANALYSIS */}
+        <Card variant="highlight" className="p-6 sm:p-8 flex flex-col justify-between space-y-6">
+          <div>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                Behavioral Analysis Report
+              </span>
+            </div>
+
             {loading ? (
-              <div className="flex items-center justify-center h-full py-16"><LoadingSpinner size="lg" /></div>
+              <div className="flex items-center justify-center h-64">
+                <LoadingSpinner size="lg" />
+              </div>
             ) : feedback ? (
-              <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Score</h3>
-                  <span className={`text-2xl font-bold ${feedback.score >= 8 ? "text-emerald-400" : feedback.score >= 5 ? "text-amber-400" : "text-red-400"}`}>{feedback.score}/10</span>
+              <div className="space-y-6">
+                <div className="flex items-center justify-center py-2">
+                  <ScoreGauge score={feedback.score} max={10} size={130} strokeWidth={9} label="STAR Score" />
                 </div>
-                <div className="w-full bg-zinc-800/60 rounded-full h-1.5"><div className="bg-gradient-to-r from-pink-500 to-purple-500 h-1.5 rounded-full" style={{ width: `${feedback.score * 10}%` }} /></div>
-                {feedback.strengths?.length > 0 && <div><h4 className="text-xs font-medium text-emerald-400 uppercase tracking-wider mb-2">Strengths</h4><ul className="space-y-1">{feedback.strengths.map((s, i) => <li key={i} className="text-sm text-zinc-400 flex items-start gap-2"><span className="text-emerald-400 shrink-0">✔</span>{s}</li>)}</ul></div>}
-                {feedback.improvements?.length > 0 && <div><h4 className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-2">Improvements</h4><ul className="space-y-1">{feedback.improvements.map((imp, i) => <li key={i} className="text-sm text-zinc-400 flex items-start gap-2"><span className="text-amber-400 shrink-0">→</span>{imp}</li>)}</ul></div>}
-                <div className="flex items-center gap-2"><span className="text-xs text-zinc-500">Action Metrics:</span><Badge variant={feedback.actionMetrics ? "success" : "error"}>{feedback.actionMetrics ? "Present" : "Missing"}</Badge></div>
-                {feedback.verbalPacingFeedback && <div><h4 className="text-xs font-medium text-pink-400 uppercase tracking-wider mb-2">Verbal Pacing</h4><p className="text-sm text-zinc-400">{feedback.verbalPacingFeedback}</p></div>}
-                {feedback.improvedStory && <div><h4 className="text-xs font-medium text-pink-400 uppercase tracking-wider mb-2">Improved Story</h4><p className="text-sm text-zinc-100 bg-zinc-900/60 p-3 rounded-lg border border-zinc-800 leading-relaxed">{feedback.improvedStory}</p></div>}
-                {feedback.followUpQuestions?.length > 0 && <div><h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Follow-up Questions to Expect</h4><ul className="space-y-1">{feedback.followUpQuestions.map((q, i) => <li key={i} className="text-sm text-zinc-400 flex items-start gap-2"><span className="text-pink-400 shrink-0">?</span>{q}</li>)}</ul></div>}
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Strengths</h4>
+                  <ul className="space-y-1 text-xs text-zinc-300">
+                    {feedback.strengths?.map((s, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-emerald-400">✓</span> {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Suggested Improvements</h4>
+                  <ul className="space-y-1 text-xs text-zinc-300">
+                    {feedback.improvements?.map((imp, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-amber-400">→</span> {imp}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {feedback.improvedStory && (
+                  <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
+                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Polished Story Script</h4>
+                    <p className="text-xs text-zinc-200 leading-relaxed font-sans">{feedback.improvedStory}</p>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full"><p className="text-zinc-500 text-sm text-center">Your STAR analysis will appear here</p></div>
+              <div className="flex flex-col items-center justify-center text-center h-64 text-zinc-500 text-xs space-y-2">
+                <span className="text-3xl">🎯</span>
+                <p>Fill out Situation, Task, Action, and Result to receive a detailed STAR score report.</p>
+              </div>
             )}
-          </Card>
-        </div>
+          </div>
+        </Card>
       </div>
     </div>
   );

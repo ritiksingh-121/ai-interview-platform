@@ -16,7 +16,7 @@ export default function MessageBubble({ msg }) {
       <div
         className={`p-3 sm:p-4 rounded-lg border ${
           isUser
-            ? "bg-pink-500/10 border-pink-500/25 text-zinc-100"
+            ? "bg-cyan-500/10 border-cyan-500/25 text-zinc-100"
             : "bg-zinc-900/60 border-zinc-800 text-zinc-100"
         }`}
       >
@@ -28,7 +28,7 @@ export default function MessageBubble({ msg }) {
                 <code
                   className={`${
                     inline
-                      ? "bg-zinc-800 px-1.5 py-0.5 rounded text-pink-300 text-xs font-mono"
+                      ? "bg-zinc-800 px-1.5 py-0.5 rounded text-emerald-400 text-xs font-mono"
                       : "block bg-zinc-950 p-3 rounded-lg border border-zinc-800 text-xs text-zinc-100 font-mono overflow-x-auto my-2"
                   }`}
                   {...props}

@@ -1,10 +1,21 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
+import ScoreGauge from "../components/ui/ScoreGauge";
 import { LoadingSpinner } from "../components/ui/Loading";
-import { getCompletion, safeParseJSON } from "../api/api";
+import { analyzeResume } from "../api/api";
+import { auth } from "../firebase";
+import { fadeUp, staggerContainer } from "../lib/motion";
+import { useNavigate } from "react-router-dom";
+
+const difficultyColors = {
+  EASY: "success",
+  MEDIUM: "warning",
+  HARD: "error",
+  EXPERT: "primary",
+};
 
 export default function ResumeTailor() {
   const [resume, setResume] = useState("");
@@ -12,6 +23,8 @@ export default function ResumeTailor() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
 
   const handleAnalyze = async () => {
     if (!resume.trim() || !jobDesc.trim()) {
@@ -23,27 +36,19 @@ export default function ResumeTailor() {
     setResult(null);
 
     try {
-      const res = await getCompletion({
-        systemPrompt: `You are an expert ATS resume analyst and career coach. Analyze the given resume against the job description and return structured JSON only — no markdown, no code fences, no explanation. Use this exact format:
-{
-  "atsScore": <number 0-100>,
-  "keywordsFound": [<strings>],
-  "keywordsMissing": [<strings>],
-  "bulletRewrites": [
-    { "original": "...", "optimized": "..." }
-  ],
-  "skillsGap": [<strings>],
-  "suggestions": [<strings>]
-}`,
-        userPrompt: `RESUME:\n${resume}\n\nJOB DESCRIPTION:\n${jobDesc}`,
+      const user = auth.currentUser;
+      const data = await analyzeResume({
+        resumeText: resume,
+        jobDescription: jobDesc,
+        userId: user?.uid,
       });
 
-      const parsed = safeParseJSON(res.reply);
-      if (!parsed) {
-        setError("Failed to parse AI response. Please try again.");
+      if (!data || data.error) {
+        setError(data?.error || "Analysis failed. Please try again.");
         return;
       }
-      setResult(parsed);
+      setResult(data);
+      setActiveTab("overview");
     } catch {
       setError("Failed to analyze. Please try again.");
     } finally {
@@ -52,114 +57,267 @@ export default function ResumeTailor() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-24 pb-safe px-4 sm:px-6 max-w-7xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Resume Tailor</h1>
-        <p className="text-sm text-zinc-400 mt-2 max-w-2xl">Paste your resume and a target job description. Our AI will analyze ATS fit, rewrite bullet points, and surface missing keywords.</p>
-      </motion.div>
-
-      <div className="grid lg:grid-cols-2 gap-6 mb-8">
-        <div>
-          <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Your Resume</label>
-          <textarea value={resume} onChange={(e) => setResume(e.target.value)} placeholder="Paste your resume content here..." rows={8} className="w-full px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 resize-y leading-relaxed min-h-[200px]" />
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-safe">
+      <section className="relative pt-32 pb-10 px-4 sm:px-8 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-blue-950/20 to-transparent" />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Job Description</label>
-          <textarea value={jobDesc} onChange={(e) => setJobDesc(e.target.value)} placeholder="Paste the job description here..." rows={8} className="w-full px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 resize-y leading-relaxed min-h-[200px]" />
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto space-y-3 relative z-10">
+          <Badge variant="cyan" className="px-3 py-1 uppercase tracking-wider text-[10px]">
+            AI Resume Intelligence
+          </Badge>
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">
+            Resume + JD <span className="gradient-accent-text">Intelligence</span>
+          </h1>
+          <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+            Upload your resume and paste the job description. AI extracts skills, calculates match score, detects gaps, and generates personalized interview questions.
+          </p>
+        </motion.div>
+      </section>
+
+      <div className="px-4 sm:px-8 max-w-7xl mx-auto pb-20 space-y-10">
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Card variant="glass" className="p-6 space-y-3">
+            <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider">
+              Your Resume
+            </label>
+            <textarea
+              value={resume}
+              onChange={(e) => setResume(e.target.value)}
+              placeholder="Paste your resume text here..."
+              rows={10}
+              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/15 leading-relaxed resize-y font-mono text-xs transition-all"
+            />
+            <p className="text-xs text-zinc-500">Or upload a PDF/DOCX file (coming soon)</p>
+          </Card>
+
+          <Card variant="glass" className="p-6 space-y-3">
+            <label className="block text-xs font-bold text-blue-400 uppercase tracking-wider">
+              Job Description
+            </label>
+            <textarea
+              value={jobDesc}
+              onChange={(e) => setJobDesc(e.target.value)}
+              placeholder="Paste the job description here..."
+              rows={10}
+              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/15 leading-relaxed resize-y font-mono text-xs transition-all"
+            />
+          </Card>
         </div>
-      </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-12">
-        <Button variant="gradient" onClick={handleAnalyze} loading={loading} disabled={loading}>Analyze & Optimize</Button>
-        {error && <p className="text-xs text-red-400 flex items-center gap-1.5"><svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{error}</p>}
-      </div>
-
-      {loading && <div className="flex justify-center py-20"><LoadingSpinner size="xl" /></div>}
-
-      {result && (
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-4">ATS Match Score</h2>
-            <Card variant="glass" className="p-4 sm:p-6 md:p-8">
-              <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-                <div className="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.08)" />
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="url(#grad)" strokeWidth="3" strokeDasharray={`${result.atsScore}, 100`} strokeLinecap="round" />
-                    <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899" /><stop offset="100%" stopColor="#8b5cf6" /></linearGradient></defs>
-                  </svg>
-                  <span className="absolute text-xl sm:text-3xl font-bold text-zinc-100">{result.atsScore}%</span>
-                </div>
-                <div className="space-y-1 flex-1 min-w-[200px]">
-                  <p className="text-sm text-zinc-400">
-                    {result.atsScore >= 80 ? "Strong match — your resume is well-aligned with this role." : result.atsScore >= 60 ? "Moderate match — some optimization needed." : "Low match — significant improvements recommended."}
-                  </p>
-                  <div className="w-full bg-zinc-800/60 rounded-full h-2 max-w-xs">
-                    <div className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full" style={{ width: `${result.atsScore}%` }} />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </section>
-
-          {result.keywordsFound?.length > 0 && (
-            <section>
-              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-4">Keyword Analysis</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <Card variant="glass" className="p-4 sm:p-6">
-                  <h3 className="text-xs font-medium text-emerald-400 mb-3 flex items-center gap-2"><span>✔</span> Keywords Found</h3>
-                  <div className="flex flex-wrap gap-2">{result.keywordsFound.map((kw, i) => <Badge key={i} variant="success">{kw}</Badge>)}</div>
-                </Card>
-                <Card variant="glass" className="p-4 sm:p-6">
-                  <h3 className="text-xs font-medium text-amber-400 mb-3 flex items-center gap-2"><span>!</span> Missing Keywords</h3>
-                  <div className="flex flex-wrap gap-2">{result.keywordsMissing.map((kw, i) => <Badge key={i} variant="warning">{kw}</Badge>)}</div>
-                </Card>
-              </div>
-            </section>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Button
+            variant="green"
+            size="lg"
+            onClick={handleAnalyze}
+            loading={loading}
+            disabled={loading}
+            className="uppercase tracking-wider text-xs py-3.5 px-8"
+          >
+            Analyze & Generate Intelligence
+          </Button>
+          {error && (
+            <p className="text-xs text-red-400 flex items-center gap-2">
+              <span>⚠️</span> {error}
+            </p>
           )}
+        </div>
 
-          {result.bulletRewrites?.length > 0 && (
-            <section>
-              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-4">Optimized Bullet Points</h2>
-              <div className="space-y-4">
-                {result.bulletRewrites.map((item, i) => (
-                  <Card key={i} variant="glass" className="p-4 sm:p-6">
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Original</p>
-                        <p className="text-sm text-zinc-400 bg-zinc-900/60 p-3 rounded-lg border border-zinc-800">{item.original}</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-zinc-500"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
-                      <div>
-                        <p className="text-xs font-medium text-pink-400 uppercase tracking-wider mb-1.5">Optimized</p>
-                        <p className="text-sm text-zinc-100 bg-pink-500/5 p-3 rounded-lg border border-pink-500/20">{item.optimized}</p>
-                      </div>
-                    </div>
-                  </Card>
+        {loading && (
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <LoadingSpinner size="xl" />
+            <p className="text-xs text-zinc-500 font-medium animate-pulse">Analyzing resume, extracting skills, calculating scores...</p>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {result && (
+            <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-8">
+              {/* Score Cards Row */}
+              <motion.div variants={fadeUp} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card variant="highlight" className="p-5 flex flex-col items-center">
+                  <ScoreGauge score={result.atsScore || 0} max={100} size={100} strokeWidth={8} label="ATS Score" />
+                  <span className="text-[10px] text-zinc-500 mt-1">{result.atsScore >= 80 ? "Excellent" : result.atsScore >= 60 ? "Good" : "Needs Work"}</span>
+                </Card>
+                <Card variant="highlight" className="p-5 flex flex-col items-center">
+                  <ScoreGauge score={result.matchScore || result.atsScore || 0} max={100} size={100} strokeWidth={8} label="Match Score" />
+                  <span className="text-[10px] text-zinc-500 mt-1">Resume vs JD Fit</span>
+                </Card>
+                <Card variant="glass" className="p-5 flex flex-col items-center justify-center gap-2">
+                  <span className="text-3xl font-bold text-amber-400">{result.skillsMissing?.length || 0}</span>
+                  <span className="text-xs text-zinc-400 font-medium">Missing Skills</span>
+                  <span className="text-[10px] text-zinc-500">Gap to address</span>
+                </Card>
+                <Card variant="glass" className="p-5 flex flex-col items-center justify-center gap-2">
+                  <span className="text-xs text-zinc-400 font-medium">Interview Difficulty</span>
+                  <Badge variant={difficultyColors[result.predictedDifficulty] || "neutral"}>
+                    {result.predictedDifficulty || "N/A"}
+                  </Badge>
+                  <span className="text-[10px] text-zinc-500">AI Predicted</span>
+                </Card>
+              </motion.div>
+
+              {/* Tab Navigation */}
+              <div className="flex gap-2 border-b border-zinc-800 pb-2 overflow-x-auto">
+                {[
+                  { id: "overview", label: "Overview" },
+                  { id: "skills", label: "Skills Analysis" },
+                  { id: "rewrites", label: "Bullet Rewrites" },
+                  { id: "questions", label: "Interview Questions" },
+                  { id: "plan", label: "Improvement Plan" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "bg-cyan-500/15 text-emerald-400 border border-cyan-500/30"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
               </div>
-            </section>
-          )}
 
-          {result.skillsGap?.length > 0 && (
-            <section>
-              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-4">Skills Gap</h2>
-              <Card variant="glass" className="p-4 sm:p-6">
-                <ul className="space-y-2">{result.skillsGap.map((skill, i) => <li key={i} className="flex items-center gap-3 text-sm text-zinc-400"><span className="text-red-400 shrink-0">✘</span>{skill}</li>)}</ul>
-              </Card>
-            </section>
-          )}
+              {/* Tab Content */}
+              <AnimatePresence mode="wait">
+                {activeTab === "overview" && (
+                  <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+                    <Card variant="glass" className="p-6">
+                      <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-4">AI Assessment</h3>
+                      <p className="text-sm text-zinc-300 leading-relaxed">
+                        {result.atsScore >= 80
+                          ? "Your resume demonstrates strong keyword overlap and alignment with this role."
+                          : result.atsScore >= 60
+                          ? "Your resume is moderately aligned. Addressing the missing keywords below will improve your pass rate."
+                          : "Significant gaps detected between your resume and this job description. Focus on the suggestions below."}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        <Badge variant={result.atsScore >= 80 ? "success" : result.atsScore >= 60 ? "warning" : "error"}>
+                          {result.atsScore >= 80 ? "Strong Match" : result.atsScore >= 60 ? "Moderate Match" : "Low Match"}
+                        </Badge>
+                        {result.predictedDifficulty && (
+                          <Badge variant={difficultyColors[result.predictedDifficulty]}>
+                            {result.predictedDifficulty} Interview
+                          </Badge>
+                        )}
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
 
-          {result.suggestions?.length > 0 && (
-            <section>
-              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mb-4">Suggestions</h2>
-              <Card variant="glass" className="p-4 sm:p-6">
-                <ul className="space-y-3">{result.suggestions.map((s, i) => <li key={i} className="flex items-start gap-3 text-sm text-zinc-400"><span className="text-pink-400 mt-0.5 shrink-0">→</span>{s}</li>)}</ul>
-              </Card>
-            </section>
+                {activeTab === "skills" && (
+                  <motion.div key="skills" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid md:grid-cols-2 gap-6">
+                    <Card variant="glass" className="p-6 space-y-4">
+                      <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>✓</span> Skills Found ({result.skillsFound?.length || 0})
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {result.skillsFound?.map((k, i) => (
+                          <Badge key={i} variant="success">{k}</Badge>
+                        ))}
+                      </div>
+                    </Card>
+                    <Card variant="glass" className="p-6 space-y-4">
+                      <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>⚡</span> Missing Skills ({result.skillsMissing?.length || 0})
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {result.skillsMissing?.map((k, i) => (
+                          <Badge key={i} variant="warning">{k}</Badge>
+                        ))}
+                      </div>
+                    </Card>
+                    {result.skillGap && result.skillGap.length > 0 && (
+                      <Card variant="glass" className="p-6 space-y-4 md:col-span-2">
+                        <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider">Skill Gap Analysis</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {result.skillGap.map((s, i) => (
+                            <Badge key={i} variant="green">{s}</Badge>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === "rewrites" && (
+                  <motion.div key="rewrites" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    {result.bulletRewrites && result.bulletRewrites.length > 0 ? (
+                      <Card variant="glass" className="p-6 space-y-6">
+                        <h3 className="text-lg font-bold text-white">Optimized Bullet Points</h3>
+                        <div className="space-y-4">
+                          {result.bulletRewrites.map((b, i) => (
+                            <div key={i} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
+                              <p className="text-xs text-red-400 line-through">Original: {b.original}</p>
+                              <p className="text-xs text-emerald-300 font-semibold">Optimized: {b.optimized}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    ) : (
+                      <Card variant="glass" className="p-6 text-center text-sm text-zinc-400">No bullet rewrites available.</Card>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === "questions" && (
+                  <motion.div key="questions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <Card variant="glass" className="p-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-white">Personalized Interview Questions</h3>
+                        <Badge variant="live">AI Generated</Badge>
+                      </div>
+                      <p className="text-xs text-zinc-400">Based on your resume and the job description:</p>
+                      <div className="space-y-3">
+                        {result.interviewQuestions?.map((q, i) => (
+                          <div key={i} className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 flex items-start gap-3">
+                            <span className="text-emerald-400 font-bold text-xs mt-0.5 shrink-0">Q{i + 1}.</span>
+                            <p className="text-sm text-zinc-200">{q}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        variant="green"
+                        size="sm"
+                        onClick={() => navigate("/interview")}
+                        className="mt-2"
+                      >
+                        Practice These Questions
+                      </Button>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {activeTab === "plan" && (
+                  <motion.div key="plan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {result.improvementPlan && (
+                      <Card variant="glass" className="p-6">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-3">Improvement Plan</h3>
+                        <p className="text-sm text-zinc-300 leading-relaxed">{result.improvementPlan}</p>
+                      </Card>
+                    )}
+                    {result.suggestions && result.suggestions.length > 0 && (
+                      <Card variant="glass" className="p-6 space-y-4">
+                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">AI Suggestions</h3>
+                        <ul className="space-y-2">
+                          {result.suggestions.map((s, i) => (
+                            <li key={i} className="flex items-start gap-3 text-xs text-zinc-300">
+                              <span className="text-emerald-400 mt-0.5 shrink-0">→</span>
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </Card>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           )}
-        </div>
-      )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

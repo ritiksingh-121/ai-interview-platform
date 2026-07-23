@@ -1,0 +1,426 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum InterviewStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum QuestionType {
+  TECHNICAL
+  BEHAVIORAL
+  HR
+  SYSTEM_DESIGN
+  CODING
+  DSA
+  PROJECT_DEEP_DIVE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum Personality {
+  FRIENDLY
+  STRICT
+  AGGRESSIVE
+  SENIOR_ENGINEER
+  ENGINEERING_MANAGER
+  HR
+  PRINCIPAL_ENGINEER
+}
+
+enum Company {
+  GENERAL
+  GOOGLE
+  AMAZON
+  MICROSOFT
+  META
+  ADOBE
+  UBER
+  FLIPKART
+  MEESHO
+  ORACLE
+  TCS
+  INFOSYS
+  JOSH_TECHNOLOGY
+}
+
+enum Plan {
+  FREE
+  PRO
+  ADVANCED
+}
+
+enum ChallengeType {
+  INTERVIEW
+  CODING
+  HR
+  CS_FUNDAMENTALS
+}
+
+enum Role {
+  FRONTEND
+  BACKEND
+  FULLSTACK
+  DSA
+  HR
+  SYSTEM_DESIGN
+  DEVOPS
+  ML_ENGINEER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  firebaseUid   String   @unique
+  email         String   @unique
+  name          String?
+  plan          Plan     @default(FREE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  interviews        Interview[]
+  resumes           Resume[]
+  jobDescriptions   JobDescription[]
+  roadmaps          Roadmap[]
+  challengeSubmissions ChallengeSubmission[]
+  codingSessions    CodingSession[]
+  feedbacks         Feedback[]
+  progress          Progress[]
+  dailyChallenges   DailyChallenge[]
+  achievements      Achievement[]
+  githubAnalyses    GitHubAnalysis[]
+  portfolioAnalyses PortfolioAnalysis[]
+  answers Answer[]
+}
+
+model Interview {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  role            Role
+  company         Company         @default(GENERAL)
+  personality     Personality     @default(STRICT)
+  status          InterviewStatus @default(IN_PROGRESS)
+  score           Int?
+  overallScore    Int?
+  technicalScore  Int?
+  communicationScore Int?
+  confidenceScore Int?
+  problemSolvingScore Int?
+  dsaScore        Int?
+  systemDesignScore Int?
+  codingScore     Int?
+  projectsScore   Int?
+  hrScore         Int?
+  softSkillsScore Int?
+  hiringProbability Int?
+  strengths       String   @default("[]")
+  weaknesses      String   @default("[]")
+  improvementPlan String?
+  duration        Int?
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  messages InterviewMessage[]
+  feedback Feedback[]
+  questions Question[]
+  invites InterviewInvite[]
+}
+
+model InterviewMessage {
+  id           String   @id @default(cuid())
+  interviewId  String
+  interview    Interview @relation(fields: [interviewId], references: [id])
+  role         String
+  content      String
+  questionType QuestionType?
+  score        Int?
+  feedback     String?
+  createdAt    DateTime @default(now())
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  interviewId   String?
+  interview     Interview?   @relation(fields: [interviewId], references: [id])
+  content       String
+  type          QuestionType
+  difficulty    Difficulty
+  company       Company      @default(GENERAL)
+  source        String?
+  contextId     String?
+  metadata      String?
+  createdAt     DateTime     @default(now())
+
+  answers Answer[]
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  content    String
+  score      Int?
+  feedback   String?
+  timeSpent  Int?
+  createdAt  DateTime @default(now())
+}
+
+model Feedback {
+  id          String @id @default(cuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id])
+  userId      String
+  user        User   @relation(fields: [userId], references: [id])
+  overallScore Int
+  technicalScore Int?
+  communicationScore Int?
+  confidenceScore Int?
+  problemSolvingScore Int?
+  dsaScore Int?
+  systemDesignScore Int?
+  codingScore Int?
+  projectsScore Int?
+  hrScore Int?
+  softSkillsScore Int?
+  hiringProbability Int?
+  strengths String   @default("[]")
+  weaknesses String   @default("[]")
+  improvementPlan String?
+  detailedFeedback String?
+  createdAt DateTime @default(now())
+}
+
+model Resume {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  fileName     String
+  fileUrl      String?
+  content      String
+  parsedData   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  analyses ResumeAnalysis[]
+}
+
+model ResumeAnalysis {
+  id              String   @id @default(cuid())
+  resumeId        String
+  resume          Resume   @relation(fields: [resumeId], references: [id])
+  jobDescriptionId String?
+  jobDescription  JobDescription? @relation(fields: [jobDescriptionId], references: [id])
+  atsScore        Int?
+  matchScore      Int?
+  skillsFound     String   @default("[]")
+  skillsMissing   String   @default("[]")
+  suggestions     String   @default("[]")
+  bulletRewrites  String?
+  skillGap        String   @default("[]")
+  improvementPlan String?
+  interviewQuestions String @default("[]")
+  predictedDifficulty String?
+  createdAt       DateTime @default(now())
+}
+
+model JobDescription {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  title           String?
+  company         String?
+  content         String
+  extractedSkills String   @default("[]")
+  extractedRequirements String @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  analyses ResumeAnalysis[]
+}
+
+model CodingSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  company     Company  @default(GENERAL)
+  title       String?
+  language    String   @default("javascript")
+  code        String   @default("")
+  problem     String?
+  testCases   String?
+  results     String?
+  executionTime Int?
+  memoryUsage Int?
+  score       Int?
+  feedback    String?
+  timeSpent   Int?
+  autoSaved   Boolean  @default(false)
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Roadmap {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  duration    Int
+  title       String?
+  focusArea   String?
+  generatedBy String   @default("ai")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items RoadmapItem[]
+}
+
+model RoadmapItem {
+  id          String   @id @default(cuid())
+  roadmapId   String
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id])
+  day         Int
+  title       String
+  description String?
+  topics      String   @default("[]")
+  resources   String   @default("[]")
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model DailyChallenge {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  date        DateTime
+  type        ChallengeType
+  title       String
+  description String?
+  content     String?
+  completed   Boolean       @default(false)
+  score       Int?
+  streak      Int           @default(0)
+  createdAt   DateTime      @default(now())
+
+  submissions ChallengeSubmission[]
+}
+
+model ChallengeSubmission {
+  id          String   @id @default(cuid())
+  challengeId String
+  challenge   DailyChallenge @relation(fields: [challengeId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  answer      String
+  score       Int?
+  feedback    String?
+  createdAt   DateTime @default(now())
+}
+
+model GitHubAnalysis {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  username      String
+  repositories  String?
+  languages     String?
+  commitActivity String?
+  projectQuality String?
+  interviewQuestions String @default("[]")
+  score         Int?
+  suggestions   String   @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PortfolioAnalysis {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  url           String
+  performanceScore Int?
+  seoScore      Int?
+  accessibilityScore Int?
+  projects      String?
+  uiScore       Int?
+  suggestions   String   @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Progress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  week        Int?
+  month       Int?
+  year        Int
+  interviewsCompleted Int @default(0)
+  averageScore Int?
+  topicsMastered String @default("[]")
+  weakTopics  String   @default("[]")
+  totalTimeSpent Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  description String?
+  icon        String?
+  unlockedAt  DateTime @default(now())
+}
+
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String
+  stripeSessionId String?
+  plan            Plan     @default(FREE)
+  active          Boolean  @default(true)
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Recruiter {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  company   String?
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invites InterviewInvite[]
+}
+
+model InterviewInvite {
+  id             String   @id @default(cuid())
+  recruiterId    String
+  recruiter      Recruiter @relation(fields: [recruiterId], references: [id])
+  candidateEmail String
+  candidateName  String?
+  interviewId    String?
+  interview      Interview? @relation(fields: [interviewId], references: [id])
+  status         String   @default("PENDING")
+  message        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

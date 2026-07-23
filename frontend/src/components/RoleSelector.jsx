@@ -5,7 +5,7 @@ export default function RoleSelector({ role, setRole, disabled }) {
         value={role}
         onChange={(e) => setRole(e.target.value)}
         disabled={disabled}
-        className="appearance-none bg-zinc-900/60 border border-zinc-800 text-zinc-100 pl-4 pr-10 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all focus:outline-none focus:border-pink-500/40 focus:ring-2 focus:ring-pink-500/10 hover:bg-zinc-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="appearance-none bg-zinc-900/60 border border-zinc-800 text-zinc-100 pl-4 pr-10 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all focus:outline-none focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/10 hover:bg-zinc-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <option className="bg-zinc-950 text-zinc-100">Frontend Developer</option>
         <option className="bg-zinc-950 text-zinc-100">Backend Developer</option>
