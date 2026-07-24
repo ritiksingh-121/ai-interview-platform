@@ -75,7 +75,7 @@ export default function Dashboard() {
         <Button
           variant="green"
           size="lg"
-          onClick={() => navigate("/interview")}
+          onClick={() => navigate("/interview", { replace: true })}
           className="gap-2 shrink-0 justify-center uppercase tracking-wider text-xs py-3.5 px-6 shadow-xl"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

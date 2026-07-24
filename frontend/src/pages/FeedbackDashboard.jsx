@@ -182,7 +182,7 @@ export default function FeedbackDashboard() {
 
               <div className="flex gap-4 justify-center">
                 <Button variant="green" onClick={() => navigate("/interview")}>Practice Again</Button>
-                <Button variant="outline" onClick={() => navigate("/service")}>Back to Dashboard</Button>
+                <Button variant="outline" onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
               </div>
             </motion.div>
           </AnimatePresence>

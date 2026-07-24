@@ -45,7 +45,7 @@ function Navbar() {
               <Link to="/pricing" className={linkClass("/pricing")}>Pricing</Link>
               {user && (
                 <>
-                  <Link to="/service" className={linkClass("/service")}>Dashboard</Link>
+                  <Link to="/dashboard" className={linkClass("/dashboard")}>Dashboard</Link>
                   <Link to="/history" className={linkClass("/history")}>History</Link>
                 </>
               )}
@@ -104,7 +104,7 @@ function Navbar() {
               <Link to="/pricing" className={`block px-3 py-2 rounded-lg text-xs font-semibold ${isActive("/pricing") ? "text-emerald-500 bg-emerald-500/10" : "text-zinc-400 hover:text-zinc-200"}`}>Pricing</Link>
               {user ? (
                 <>
-                  <Link to="/service" className={`block px-3 py-2 rounded-lg text-xs font-semibold ${isActive("/service") ? "text-emerald-500 bg-emerald-500/10" : "text-zinc-400 hover:text-zinc-200"}`}>Dashboard</Link>
+                  <Link to="/dashboard" className={`block px-3 py-2 rounded-lg text-xs font-semibold ${isActive("/dashboard") ? "text-emerald-500 bg-emerald-500/10" : "text-zinc-400 hover:text-zinc-200"}`}>Dashboard</Link>
                   <hr className="border-zinc-800 my-3" />
                   <button onClick={toggleTheme} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 transition-all cursor-pointer">{theme === "dark" ? "Light Mode" : "Dark Mode"}</button>
                   <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-all cursor-pointer">Logout</button>
@@ -127,7 +127,7 @@ function Navbar() {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
             <span className="text-[10px] font-semibold">Home</span>
           </Link>
-          <Link to={user ? "/service" : "/login"} className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-all ${isActive("/service") ? "text-emerald-500" : "text-zinc-500"}`}>
+          <Link to={user ? "/dashboard" : "/login"} className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-all ${isActive("/dashboard") ? "text-emerald-500" : "text-zinc-500"}`}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             <span className="text-[10px] font-semibold">Dashboard</span>
           </Link>

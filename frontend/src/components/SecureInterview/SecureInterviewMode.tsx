@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useFullscreen } from "../../hooks/useFullscreen";
 import { useTabFocus } from "../../hooks/useTabFocus";
 import { useViolation, ViolationSeverity } from "../../hooks/useViolation";
@@ -52,6 +53,7 @@ export default function SecureInterviewMode({
   interviewId,
   userId,
 }: SecureInterviewModeProps) {
+  const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
   const [showStartPrompt, setShowStartPrompt] = useState(true);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -270,7 +272,7 @@ export default function SecureInterviewMode({
           camera.stopCamera();
           audio.stopMicrophone();
           setSharedStream(null);
-          window.location.href = "/service";
+          navigate("/dashboard", { replace: true });
         }}
       />
     );

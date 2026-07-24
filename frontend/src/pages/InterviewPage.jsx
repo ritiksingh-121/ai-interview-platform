@@ -293,6 +293,7 @@ export default function InterviewPage() {
                   onClick={async () => {
                     const saved = await saveInterviewSession();
                     navigate("/feedback", {
+                      replace: true,
                       state: {
                         messages,
                         interviewId: saved?.id || null,

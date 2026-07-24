@@ -26,7 +26,7 @@ export default function Success() {
           <div className="flex justify-between"><span>Access level:</span><span className="text-zinc-100 font-medium">Pro Mock Session Suite</span></div>
         </div>
 
-        <Button variant="green" onClick={() => navigate("/service")} className="w-full justify-center py-3">Go to Dashboard</Button>
+        <Button variant="green" onClick={() => navigate("/dashboard")} className="w-full justify-center py-3">Go to Dashboard</Button>
       </Card>
     </div>
   );

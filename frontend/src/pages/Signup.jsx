@@ -23,7 +23,7 @@ export default function Signup() {
       const res = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(res.user, { displayName: name });
       await setDoc(doc(db, "users", res.user.uid), { name, email, createdAt: new Date().toISOString() });
-      navigate("/service");
+      navigate("/dashboard");
     } catch {
       setError("Account creation failed. Email may already be registered.");
     }

@@ -20,7 +20,7 @@ export default function Login() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/service");
+      navigate("/dashboard");
     } catch {
       setError("Invalid email or password. Please check your credentials.");
     }

@@ -36,7 +36,7 @@ function Home() {
           </motion.p>
 
           <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row gap-4">
-            <Button variant="green" size="lg" onClick={() => navigate("/service")} className="w-full sm:w-auto justify-center px-8 py-4 text-sm shadow-xl shadow-emerald-500/25">
+            <Button variant="green" size="lg" onClick={() => navigate("/dashboard")} className="w-full sm:w-auto justify-center px-8 py-4 text-sm shadow-xl shadow-emerald-500/25">
               Start Free Mock Interview
             </Button>
             <Button variant="outline" size="lg" onClick={() => navigate("/pricing")} className="w-full sm:w-auto justify-center px-8 py-4 text-sm border-zinc-800 text-zinc-500">
@@ -327,7 +327,7 @@ function Home() {
               Join thousands of engineers using AI to practice, improve, and land offers at top tech companies.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="green" size="lg" onClick={() => navigate("/service")} className="w-full sm:w-auto justify-center px-8 py-4 text-sm shadow-xl shadow-emerald-500/25">
+              <Button variant="green" size="lg" onClick={() => navigate("/dashboard")} className="w-full sm:w-auto justify-center px-8 py-4 text-sm shadow-xl shadow-emerald-500/25">
                 Start Free Practice →
               </Button>
               <Button variant="outline" size="lg" onClick={() => navigate("/pricing")} className="w-full sm:w-auto justify-center px-8 py-4 text-sm border-zinc-800 text-zinc-500">
@@ -390,7 +390,7 @@ function Home() {
               <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Company</h4>
               <ul className="space-y-2.5">
                 <li><button onClick={() => navigate("/pricing")} className="text-xs text-zinc-500 hover:text-emerald-400 transition-colors">Pricing</button></li>
-                <li><button onClick={() => navigate("/service")} className="text-xs text-zinc-500 hover:text-emerald-400 transition-colors">Dashboard</button></li>
+                <li><button onClick={() => navigate("/dashboard")} className="text-xs text-zinc-500 hover:text-emerald-400 transition-colors">Dashboard</button></li>
                 <li><span className="text-xs text-zinc-500">Contact: hello@aiinterview.dev</span></li>
                 <li><span className="text-xs text-zinc-500">Built for engineers</span></li>
               </ul>

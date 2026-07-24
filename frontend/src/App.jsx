@@ -1,7 +1,7 @@
 import React from 'react'
 import Signup from "./pages/Signup"
 import Login from "./pages/Login"
-import {Routes,Route} from "react-router-dom"
+import {Routes,Route,Navigate} from "react-router-dom"
 import Home from './pages/Home'
 import Navbar from './pages/Navbar'
 import ProtectedRoute from './pages/ProtectedRoute';
@@ -36,7 +36,8 @@ function App() {
       <Route path="/" element={<Home />}/>
       <Route path="/signup" element={<Signup/>}/>
       <Route path="/login" element={<Login/>}/>
-      <Route path="/service" element={<ProtectedRoute><Dashboard  /></ProtectedRoute>}/>
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>}/>
+      <Route path="/service" element={<Navigate to="/dashboard" replace/>}/>
       <Route path="/pricing" element={<Pricing/>}/>
       <Route path="/success" element={<Success/>}/>
       <Route path="/interview" element={<ProtectedRoute><InterviewPage/></ProtectedRoute>}/>
