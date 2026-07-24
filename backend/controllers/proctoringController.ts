@@ -7,10 +7,14 @@ export async function createProctoringSession(req: Request, res: Response) {
     if (!userId) {
       return res.status(400).json({ error: "userId required" });
     }
+    const user = await prisma.user.findUnique({ where: { firebaseUid: userId } });
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
     const session = await prisma.proctoringSession.create({
       data: {
         ...(interviewId ? { interviewId } : {}),
-        userId,
+        userId: user.id,
         strictMode,
         maxViolations,
       },

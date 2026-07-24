@@ -20,6 +20,8 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
   });
   const wasOfflineRef = useRef(false);
   const enabledRef = useRef(false);
+  const onViolationRef = useRef(onViolation);
+  onViolationRef.current = onViolation;
 
   const checkLatency = useCallback(async () => {
     if (!enabledRef.current) return;
@@ -37,7 +39,7 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
     const handleOnline = () => {
       setNetworkInfo((prev) => ({ ...prev, isOnline: true }));
       if (wasOfflineRef.current) {
-        onViolation?.("NETWORK_RECONNECT", "Network reconnected after being offline");
+        onViolationRef.current?.("NETWORK_RECONNECT", "Network reconnected after being offline");
       }
       wasOfflineRef.current = false;
       checkLatency();
@@ -46,7 +48,7 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
     const handleOffline = () => {
       setNetworkInfo((prev) => ({ ...prev, isOnline: false }));
       wasOfflineRef.current = true;
-      onViolation?.("NETWORK_OFFLINE", "Network connection lost");
+      onViolationRef.current?.("NETWORK_OFFLINE", "Network connection lost");
     };
 
     window.addEventListener("online", handleOnline);
@@ -63,7 +65,7 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
             rtt: conn.rtt,
           }));
           if (conn.rtt && conn.rtt > 1000) {
-            onViolation?.("HIGH_LATENCY", `High latency detected: ${conn.rtt}ms`);
+            onViolationRef.current?.("HIGH_LATENCY", `High latency detected: ${conn.rtt}ms`);
           }
         };
         updateConnection();
@@ -83,7 +85,7 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
       window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
-  }, [checkLatency, onViolation]);
+  }, [checkLatency]);
 
   const enable = useCallback(() => { enabledRef.current = true; }, []);
   const disable = useCallback(() => { enabledRef.current = false; }, []);

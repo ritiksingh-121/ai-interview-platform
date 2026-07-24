@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFullscreen } from "../../hooks/useFullscreen";
 import { useTabFocus } from "../../hooks/useTabFocus";
 import { useViolation, ViolationSeverity } from "../../hooks/useViolation";
@@ -12,7 +12,7 @@ import { useObjectDetection } from "../../hooks/useObjectDetection";
 import { useAudio } from "../../hooks/useAudio";
 import { useAIAssistance } from "../../hooks/useAIAssistance";
 import { useScreenCapture } from "../../hooks/useScreenCapture";
-import { determineSeverity } from "../../utils/violationEngine";
+import { useCameraStream } from "../../context/CameraContext";
 import FullscreenEnforcer from "./FullscreenEnforcer";
 import CountdownOverlay from "./CountdownOverlay";
 import TerminationScreen from "./TerminationScreen";
@@ -57,7 +57,8 @@ export default function SecureInterviewMode({
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [socket, setSocket] = useState<any>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const initializedRef = useRef(false);
+
+  const { setStream: setSharedStream } = useCameraStream();
 
   const violationHook = useViolation({
     maxViolations,
@@ -210,11 +211,31 @@ export default function SecureInterviewMode({
     const stream = await camera.startCamera();
     if (stream) {
       setCameraStream(stream);
+      setSharedStream(stream);
     }
 
-    const micStream = await audio.startMicrophone();
+    await audio.startMicrophone();
 
     setIsReady(true);
+  }, [
+    fullscreen.enable,
+    tabFocus.enable,
+    multiMonitor.enable,
+    networkMonitor.enable,
+    browserIntegrity.enable,
+    screenCapture.enable,
+    audio.enable,
+    audio.startMicrophone,
+    aiAssistance.enable,
+    createSocketConnection,
+    createProctoringSession,
+    camera.startCamera,
+    setCameraStream,
+    setSharedStream,
+  ]);
+
+  useEffect(() => {
+    return () => setSharedStream(null);
   }, []);
 
   if (!enabled) return <>{children}</>;
@@ -248,6 +269,7 @@ export default function SecureInterviewMode({
           tabFocus.disable();
           camera.stopCamera();
           audio.stopMicrophone();
+          setSharedStream(null);
           window.location.href = "/service";
         }}
       />
@@ -289,13 +311,8 @@ export default function SecureInterviewMode({
         </div>
       )}
 
-      {faceDetection.canvasRef.current && (
-        <canvas ref={faceDetection.canvasRef} className="hidden" />
-      )}
-
-      {objectDetection.canvasRef.current && (
-        <canvas ref={objectDetection.canvasRef} className="hidden" />
-      )}
+      <canvas ref={faceDetection.canvasRef} className="hidden" />
+      <canvas ref={objectDetection.canvasRef} className="hidden" />
     </div>
   );
 }

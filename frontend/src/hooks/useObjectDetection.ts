@@ -47,12 +47,36 @@ export function useObjectDetection(options: UseObjectDetectionOptions) {
   const [secondPersonDetected, setSecondPersonDetected] = useState(false);
   const [bookDetected, setBookDetected] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const enabledRef = useRef(enabled);
   const phoneWarningCountRef = useRef(0);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || !stream) return;
+
+    if (!videoRef.current) {
+      const video = document.createElement("video");
+      video.playsInline = true;
+      video.muted = true;
+      video.autoplay = true;
+      videoRef.current = video;
+    }
+
+    const video = videoRef.current;
+    video.srcObject = stream;
+    video.play().catch(() => {});
+
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [enabled, stream]);
 
   const simulateDetection = useCallback((objects: DetectedObject[]) => {
     if (!enabledRef.current) return;
@@ -104,8 +128,53 @@ export function useObjectDetection(options: UseObjectDetectionOptions) {
   }, [phoneDetected, secondPersonDetected, bookDetected, onViolation, onTerminate]);
 
   const captureFrame = useCallback((): string | null => {
-    if (!canvasRef.current) return null;
-    return canvasRef.current.toDataURL("image/jpeg", 0.4);
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return null;
+
+    const debug = (label: string, val: any) => console.debug(`[ObjectDetection:captureFrame] ${label}:`, val);
+
+    debug("video.readyState", video.readyState);
+    debug("video.videoWidth x video.videoHeight", `${video.videoWidth} x ${video.videoHeight}`);
+    debug("video.paused", video.paused);
+    debug("video.ended", video.ended);
+
+    if (video.readyState < 2) {
+      console.warn("[ObjectDetection:captureFrame] Video not ready (readyState < HAVE_CURRENT_DATA)");
+      return null;
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
+      console.warn("[ObjectDetection:captureFrame] Video dimensions not available");
+      return null;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      console.warn("[ObjectDetection:captureFrame] Could not get 2D context");
+      return null;
+    }
+
+    ctx.drawImage(video, 0, 0);
+
+    debug("canvas.width x canvas.height", `${canvas.width} x ${canvas.height}`);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.4);
+    debug("dataUrl length", dataUrl.length);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        debug("blob.size", blob.size);
+        debug("blob.type", blob.type);
+      } else {
+        console.warn("[ObjectDetection:captureFrame] toBlob returned null");
+      }
+    }, "image/jpeg", 0.4);
+
+    return dataUrl;
   }, []);
 
   const reset = useCallback(() => {

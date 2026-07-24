@@ -52,16 +52,67 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
   }, [enabled]);
 
   const captureSnapshot = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return null;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+    if (!video || !canvas) {
+      console.warn("[FaceDetection:captureSnapshot] video or canvas ref is null");
+      return null;
+    }
+
+    const debug = (label: string, val: any) => console.debug(`[FaceDetection:captureSnapshot] ${label}:`, val);
+
+    debug("video.readyState", video.readyState);
+    debug("video.videoWidth x video.videoHeight", `${video.videoWidth} x ${video.videoHeight}`);
+    debug("video.paused", video.paused);
+    debug("video.ended", video.ended);
+
+    if (video.readyState < 2) {
+      console.warn("[FaceDetection:captureSnapshot] Video not ready (readyState < HAVE_CURRENT_DATA). Cannot capture.");
+      return null;
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
+      console.warn("[FaceDetection:captureSnapshot] Video dimensions are zero. Video stream may not have produced a frame yet.");
+      return null;
+    }
+
+    const track = stream?.getVideoTracks()[0];
+    if (track) {
+      debug("track.readyState", track.readyState);
+      debug("track settings", track.getSettings());
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    debug("canvas.width x canvas.height", `${canvas.width} x ${canvas.height}`);
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      console.warn("[FaceDetection:captureSnapshot] Could not get 2D context");
+      return null;
+    }
+
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.5);
-  }, []);
+
+    if (canvas.width > 0 && canvas.height > 0) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let nonEmptyPixels = 0;
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] > 0 || imageData.data[i + 1] > 0 || imageData.data[i + 2] > 0) {
+          nonEmptyPixels++;
+        }
+      }
+      debug("non-empty pixels", nonEmptyPixels);
+      debug("total pixels", canvas.width * canvas.height);
+      if (nonEmptyPixels === 0) {
+        console.warn("[FaceDetection:captureSnapshot] Captured frame is completely blank/black!");
+      }
+    }
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
+    debug("dataUrl length", dataUrl.length);
+    return dataUrl;
+  }, [stream]);
 
   const checkBrightness = useCallback((imageData: ImageData): boolean => {
     let total = 0;
@@ -76,7 +127,7 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
     if (!enabledRef.current || !stream || !videoRef.current) return;
 
     const video = videoRef.current;
-    if (video.readyState < 2) {
+    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
       animationRef.current = requestAnimationFrame(processFrame);
       return;
     }
@@ -87,14 +138,16 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
       return;
     }
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) {
       animationRef.current = requestAnimationFrame(processFrame);
       return;
     }
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
     ctx.drawImage(video, 0, 0);
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -135,11 +188,11 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
     }, 3000);
 
     const noFaceTimer = setInterval(() => {
-      if (!video.paused && !video.ended) {
+      if (video.readyState >= 2 && video.videoWidth > 0 && !video.paused && !video.ended) {
         const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        const ctx = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (ctx) {
           ctx.drawImage(video, 0, 0);
           const data = ctx.getImageData(0, 0, canvas.width, canvas.height);

@@ -34,11 +34,27 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:5173", process.env.FRONTEND_URL].filter(Boolean),
+  origin: (origin, callback) => {
+    const allowed = [
+      "http://localhost:5173",
+      "http://localhost:4173",
+      "https://ai-interview-platform-dusky.vercel.app",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean);
+
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn("CORS blocked origin:", origin);
+      callback(new Error("Origin not allowed by CORS"));
+    }
+  },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
+app.use(helmet());
 app.use(cookieParser());
 app.use(generalLimiter);
 
@@ -142,6 +158,10 @@ app.post("/webhook", async (req, res) => {
 
 app.get("/", (_req, res) => {
   res.json({ status: "Backend Running 🚀" });
+});
+
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 initSocket(httpServer);

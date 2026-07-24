@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import ChatBox from "../components/ChatBox";
 import RoleSelector from "../components/RoleSelector";
 import CompanySelector from "../components/CompanySelector";
@@ -13,6 +13,7 @@ import TypingIndicator from "../components/ui/TypingIndicator";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import SecureInterviewMode from "../components/SecureInterview/SecureInterviewMode";
+import { useCameraStream } from "../context/CameraContext";
 
 const ROLE_MAP = {
   "Frontend Developer": "FRONTEND",
@@ -37,9 +38,30 @@ export default function InterviewPage() {
   const [secureViolations, setSecureViolations] = useState(0);
   const [interviewSavedId, setInterviewSavedId] = useState(null);
 
+  const { stream: sharedStream } = useCameraStream();
   const bottomRef = useRef(null);
   const videoRefDesktop = useRef(null);
   const videoRefMobile = useRef(null);
+  const secureModeRef = useRef(secureMode);
+  const sharedStreamRef = useRef(sharedStream);
+  const isInterviewStartedRef = useRef(false);
+  secureModeRef.current = secureMode;
+  sharedStreamRef.current = sharedStream;
+  isInterviewStartedRef.current = isInterviewStarted;
+
+  const setVideoDesktopRef = useCallback((el) => {
+    videoRefDesktop.current = el;
+    if (el && isInterviewStartedRef.current && secureModeRef.current && sharedStreamRef.current) {
+      el.srcObject = sharedStreamRef.current;
+    }
+  }, []);
+
+  const setVideoMobileRef = useCallback((el) => {
+    videoRefMobile.current = el;
+    if (el && isInterviewStartedRef.current && secureModeRef.current && sharedStreamRef.current) {
+      el.srcObject = sharedStreamRef.current;
+    }
+  }, []);
   const recognitionRef = useRef(null);
   const listeningRef = useRef(false);
   const isSpeakingRef = useRef(false);
@@ -52,11 +74,11 @@ export default function InterviewPage() {
   useEffect(() => () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); }, []);
 
   useEffect(() => {
-    if (isInterviewStarted && messages.length > 0) {
+    if (isInterviewStarted) {
       timerRef.current = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isInterviewStarted, messages]);
+  }, [isInterviewStarted]);
 
   const saveInterviewSession = async () => {
     const user = auth.currentUser;
@@ -86,18 +108,25 @@ export default function InterviewPage() {
   };
 
   useEffect(() => {
-    if (!isInterviewStarted || secureMode) return;
+    if (!isInterviewStarted) return;
+    if (secureMode && sharedStream) {
+      if (videoRefDesktop.current) videoRefDesktop.current.srcObject = sharedStream;
+      if (videoRefMobile.current) videoRefMobile.current.srcObject = sharedStream;
+      return;
+    }
+    if (secureMode) return;
+    let localStream = null;
     const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        streamRef.current = stream;
-        if (videoRefDesktop.current) videoRefDesktop.current.srcObject = stream;
-        if (videoRefMobile.current) videoRefMobile.current.srcObject = stream;
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        streamRef.current = localStream;
+        if (videoRefDesktop.current) videoRefDesktop.current.srcObject = localStream;
+        if (videoRefMobile.current) videoRefMobile.current.srcObject = localStream;
       } catch (err) { console.error("Camera access error:", err); }
     };
     startCamera();
-    return () => { if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop()); };
-  }, [isInterviewStarted, secureMode]);
+    return () => { if (localStream) localStream.getTracks().forEach((t) => t.stop()); };
+  }, [isInterviewStarted, secureMode, sharedStream]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -349,7 +378,7 @@ export default function InterviewPage() {
                   </span>
                 </div>
                 <div className="aspect-video rounded-xl bg-black border border-zinc-800 overflow-hidden relative shadow-lg">
-                  <video ref={videoRefDesktop} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                  <video ref={setVideoDesktopRef} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
                 </div>
               </div>
 
@@ -414,7 +443,7 @@ export default function InterviewPage() {
             <div className="shrink-0 px-3 pt-2 pb-2 bg-zinc-900/80 border-b border-zinc-800">
               <div className="flex items-center gap-3">
                 <div className="w-24 aspect-video rounded-lg bg-black border border-zinc-800 overflow-hidden relative shrink-0">
-                  <video ref={videoRefMobile} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                  <video ref={setVideoMobileRef} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-zinc-200 truncate">{role}</p>
