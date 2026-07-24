@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import Stripe from "stripe";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { createServer } from "http";
 
 import interviewRoutes from "./routes/interviewRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
@@ -20,11 +21,16 @@ import recruiterRoutes from "./routes/recruiterRoutes.ts";
 import coachRoutes from "./routes/coachRoutes.ts";
 import githubRoutes from "./routes/githubRoutes.ts";
 import portfolioRoutes from "./routes/portfolioRoutes.ts";
+import progressRoutes from "./routes/progressRoutes.ts";
+import proctoringRoutes from "./routes/proctoringRoutes.ts";
+import prisma from "./db/prisma.ts";
 import { generalLimiter, aiLimiter } from "./middleware/rateLimit.ts";
+import { initSocket } from "./socket/index.ts";
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -54,6 +60,8 @@ app.use("/api/recruiter", aiLimiter, recruiterRoutes);
 app.use("/api/coach", aiLimiter, coachRoutes);
 app.use("/api/github", aiLimiter, githubRoutes);
 app.use("/api/portfolio", aiLimiter, portfolioRoutes);
+app.use("/api/progress", progressRoutes);
+app.use("/api/proctoring", proctoringRoutes);
 
 app.post("/create-checkout-session", async (req, res) => {
   try {
@@ -87,7 +95,7 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-app.post("/webhook", (req, res) => {
+app.post("/webhook", async (req, res) => {
   const sig = req.headers["stripe-signature"] as string;
   let event: Stripe.Event;
 
@@ -100,7 +108,33 @@ app.post("/webhook", (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    console.log("✅ Payment Successful - User:", session.metadata?.userId, "Plan:", session.metadata?.plan);
+    const userId = session.metadata?.userId;
+    const plan = session.metadata?.plan;
+    console.log("✅ Payment Successful - User:", userId, "Plan:", plan);
+
+    if (userId && plan && plan !== "unknown") {
+      try {
+        const user = await prisma.user.findUnique({ where: { firebaseUid: userId } });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { plan: plan.toUpperCase() as any },
+          });
+          await prisma.subscription.create({
+            data: {
+              userId: user.id,
+              stripeSessionId: session.id,
+              plan: plan.toUpperCase() as any,
+              active: true,
+              startDate: new Date(),
+            },
+          });
+          console.log("✅ Subscription activated for user:", userId);
+        }
+      } catch (dbErr) {
+        console.error("Failed to activate subscription:", dbErr);
+      }
+    }
   }
 
   res.status(200).json({ received: true });
@@ -110,6 +144,8 @@ app.get("/", (_req, res) => {
   res.json({ status: "Backend Running 🚀" });
 });
 
-app.listen(PORT, () => {
+initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

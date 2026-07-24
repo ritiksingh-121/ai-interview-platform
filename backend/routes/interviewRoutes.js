@@ -6,6 +6,68 @@ const router = express.Router();
 
 router.post("/", handleInterview);
 
+async function updateProgress(userId) {
+  const now = new Date();
+  const year = now.getFullYear();
+
+  const totalInterviews = await prisma.interview.count({
+    where: { userId, status: "COMPLETED" },
+  });
+
+  const totalTimeSpent = await prisma.interview.aggregate({
+    where: { userId },
+    _sum: { duration: true },
+  });
+
+  const existing = await prisma.progress.findFirst({
+    where: { userId, year },
+  });
+
+  if (existing) {
+    await prisma.progress.update({
+      where: { id: existing.id },
+      data: {
+        interviewsCompleted: totalInterviews,
+        totalTimeSpent: totalTimeSpent._sum.duration || 0,
+      },
+    });
+  } else {
+    await prisma.progress.create({
+      data: {
+        userId,
+        year,
+        interviewsCompleted: totalInterviews,
+        totalTimeSpent: totalTimeSpent._sum.duration || 0,
+      },
+    });
+  }
+}
+
+async function checkAchievements(userId) {
+  const existing = await prisma.achievement.findMany({ where: { userId } });
+  const have = (title) => existing.some((a) => a.title === title);
+
+  const totalInterviews = await prisma.interview.count({
+    where: { userId, status: "COMPLETED" },
+  });
+
+  const achievementsToCreate = [];
+
+  if (totalInterviews >= 1 && !have("First Interview")) {
+    achievementsToCreate.push({ title: "First Interview", description: "Completed your first mock interview", icon: "🎤" });
+  }
+  if (totalInterviews >= 5 && !have("Getting Serious")) {
+    achievementsToCreate.push({ title: "Getting Serious", description: "Completed 5 mock interviews", icon: "🔥" });
+  }
+  if (totalInterviews >= 10 && !have("Interview Pro")) {
+    achievementsToCreate.push({ title: "Interview Pro", description: "Completed 10 mock interviews", icon: "🏆" });
+  }
+
+  for (const a of achievementsToCreate) {
+    await prisma.achievement.create({ data: { userId, ...a } });
+  }
+}
+
 router.post("/save", async (req, res) => {
   try {
     const { userId, role, company, personality, messages, duration } = req.body;
@@ -31,6 +93,11 @@ router.post("/save", async (req, res) => {
       },
       include: { messages: true },
     });
+
+    await Promise.all([
+      updateProgress(user.id),
+      checkAchievements(user.id),
+    ]);
 
     res.json({ interview });
   } catch (error) {

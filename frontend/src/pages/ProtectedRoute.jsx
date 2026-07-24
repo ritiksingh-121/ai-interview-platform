@@ -3,13 +3,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { Navigate } from "react-router-dom";
 import Loading from "../components/ui/Loading";
+import { syncUser } from "../api/api";
 
 export default function ProtectedRoute({ children }) {
   const [user, setUser] = useState(undefined);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      if (u) {
+        try { await syncUser(u); } catch {}
+      }
     });
     return () => unsubscribe();
   }, []);

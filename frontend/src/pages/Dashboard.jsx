@@ -10,13 +10,14 @@ import Badge from "../components/ui/Badge";
 import Loading from "../components/ui/Loading";
 import ScoreGauge from "../components/ui/ScoreGauge";
 import { fadeUp, staggerContainer } from "../lib/motion";
-import { syncUser, getInterviewAnalytics, getInterviewHistory } from "../api/api";
+import { syncUser, getInterviewAnalytics, getInterviewHistory, getUserProgress } from "../api/api";
 
 export default function Dashboard() {
   const [userData, setUserData] = useState(null);
   const [dbUser, setDbUser] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [recentSessions, setRecentSessions] = useState([]);
+  const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -28,12 +29,14 @@ export default function Dashboard() {
         const synced = await syncUser(user);
         if (synced?.user) setDbUser(synced.user);
 
-        const [analRes, histRes] = await Promise.all([
+        const [analRes, histRes, progRes] = await Promise.all([
           getInterviewAnalytics(user.uid),
           getInterviewHistory(user.uid),
+          getUserProgress(user.uid),
         ]);
         if (analRes) setAnalytics(analRes);
         if (histRes?.interviews) setRecentSessions(histRes.interviews.slice(0, 5));
+        if (progRes?.achievements) setAchievements(progRes.achievements);
       }
       setLoading(false);
     });
@@ -167,6 +170,23 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+
+      {achievements.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Achievements</h2>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {achievements.map((a, i) => (
+              <Card key={i} variant="glass" className="p-4 flex items-center gap-3 shrink-0">
+                <span className="text-2xl">{a.icon}</span>
+                <div>
+                  <p className="text-sm font-bold text-zinc-200">{a.title}</p>
+                  <p className="text-xs text-zinc-500">{a.description}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         <section className="lg:col-span-2 space-y-6">

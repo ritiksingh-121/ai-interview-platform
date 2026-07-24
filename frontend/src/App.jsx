@@ -25,6 +25,8 @@ import RecruiterDashboard from './pages/RecruiterDashboard';
 import CareerCoach from './pages/CareerCoach';
 import GitHubAnalysis from './pages/GitHubAnalysis';
 import PortfolioAnalysis from './pages/PortfolioAnalysis';
+import AdminDashboard from './pages/AdminDashboard';
+import InterviewReport from './pages/InterviewReport';
 
 function App() {
   return (
@@ -54,6 +56,8 @@ function App() {
       <Route path="/coach" element={<ProtectedRoute><CareerCoach/></ProtectedRoute>}/>
       <Route path="/github" element={<ProtectedRoute><GitHubAnalysis/></ProtectedRoute>}/>
       <Route path="/portfolio" element={<ProtectedRoute><PortfolioAnalysis/></ProtectedRoute>}/>
+      <Route path="/admin/proctoring" element={<ProtectedRoute><AdminDashboard/></ProtectedRoute>}/>
+      <Route path="/report/:sessionId" element={<ProtectedRoute><InterviewReport/></ProtectedRoute>}/>
     </Routes>
     </div>
   )

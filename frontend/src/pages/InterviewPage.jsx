@@ -3,7 +3,8 @@ import ChatBox from "../components/ChatBox";
 import RoleSelector from "../components/RoleSelector";
 import CompanySelector from "../components/CompanySelector";
 import PersonalitySelector from "../components/PersonalitySelector";
-import { sendInterviewMessage, getFeedback } from "../api/api";
+import { sendInterviewMessage, getFeedback, saveInterview } from "../api/api";
+import { auth } from "../firebase";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
@@ -11,6 +12,15 @@ import AudioWaveform from "../components/ui/AudioWaveform";
 import TypingIndicator from "../components/ui/TypingIndicator";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import SecureInterviewMode from "../components/SecureInterview/SecureInterviewMode";
+
+const ROLE_MAP = {
+  "Frontend Developer": "FRONTEND",
+  "Backend Developer": "BACKEND",
+  "Full Stack Developer": "FULLSTACK",
+  "DSA": "DSA",
+  "HR": "HR",
+};
 
 export default function InterviewPage() {
   const [messages, setMessages] = useState([]);
@@ -23,6 +33,9 @@ export default function InterviewPage() {
   const [listening, setListening] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showTips, setShowTips] = useState(false);
+  const [secureMode, setSecureMode] = useState(true);
+  const [secureViolations, setSecureViolations] = useState(0);
+  const [interviewSavedId, setInterviewSavedId] = useState(null);
 
   const bottomRef = useRef(null);
   const videoRefDesktop = useRef(null);
@@ -45,6 +58,27 @@ export default function InterviewPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isInterviewStarted, messages]);
 
+  const saveInterviewSession = async () => {
+    const user = auth.currentUser;
+    if (!user || messages.length === 0) return null;
+    try {
+      const result = await saveInterview({
+        userId: user.uid,
+        role: ROLE_MAP[role] || role,
+        company,
+        personality,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        duration: timeElapsed,
+      });
+      const saved = result?.interview || null;
+      if (saved?.id) setInterviewSavedId(saved.id);
+      return saved;
+    } catch (err) {
+      console.error("Failed to save interview:", err);
+      return null;
+    }
+  };
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -52,7 +86,7 @@ export default function InterviewPage() {
   };
 
   useEffect(() => {
-    if (!isInterviewStarted) return;
+    if (!isInterviewStarted || secureMode) return;
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -63,7 +97,7 @@ export default function InterviewPage() {
     };
     startCamera();
     return () => { if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop()); };
-  }, [isInterviewStarted]);
+  }, [isInterviewStarted, secureMode]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -183,7 +217,9 @@ export default function InterviewPage() {
     setLoading(false);
   };
 
-  return (
+  const user = auth.currentUser;
+
+  const secureContent = (
     <div className="h-dvh flex flex-col bg-zinc-950 text-zinc-100 overflow-x-hidden pt-16">
       <header className="shrink-0 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 sm:px-8 py-3">
@@ -207,16 +243,30 @@ export default function InterviewPage() {
               </>
             )}
             <RoleSelector role={role} setRole={setRole} disabled={isInterviewStarted} />
+            {!isInterviewStarted && (
+              <button
+                onClick={() => setSecureMode(!secureMode)}
+                className={`px-2.5 py-1.5 text-[11px] rounded-lg border font-medium transition-all ${
+                  secureMode
+                    ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                }`}
+                title="Toggle secure proctoring mode"
+              >
+                {secureMode ? "Secure: ON" : "Secure: OFF"}
+              </button>
+            )}
             {isInterviewStarted && (
               <>
                 <Button
                   variant="green"
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
+                    const saved = await saveInterviewSession();
                     navigate("/feedback", {
                       state: {
                         messages,
-                        interviewId: null,
+                        interviewId: saved?.id || null,
                       },
                     });
                   }}
@@ -226,8 +276,9 @@ export default function InterviewPage() {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => {
-                    if (confirm("End current interview session? Progress will be reset.")) {
+                  onClick={async () => {
+                    if (confirm("End current interview session? It will be saved to your history.")) {
+                      await saveInterviewSession();
                       setIsInterviewStarted(false);
                       setMessages([]);
                       setTimeElapsed(0);
@@ -403,5 +454,23 @@ export default function InterviewPage() {
         )}
       </main>
     </div>
+  );
+
+  return secureMode && isInterviewStarted ? (
+    <SecureInterviewMode
+      enabled={true}
+      strictMode="MEDIUM"
+      maxViolations={10}
+      interviewId={interviewSavedId || undefined}
+      userId={user?.uid}
+      timeElapsed={timeElapsed}
+      onViolation={(type, severity, msg) => {
+        setSecureViolations((p) => p + 1);
+      }}
+    >
+      {secureContent}
+    </SecureInterviewMode>
+  ) : (
+    secureContent
   );
 }

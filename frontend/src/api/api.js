@@ -202,6 +202,16 @@ export const getChallengeHistory = async (firebaseUid) => {
   }
 };
 
+export const getUserProgress = async (firebaseUid) => {
+  try {
+    const res = await fetch(`${BASE_URL}/progress/${firebaseUid}`);
+    return await res.json();
+  } catch (err) {
+    console.error("Get progress error:", err);
+    return null;
+  }
+};
+
 export const analyzeResume = async (data) => {
   try {
     const res = await fetch(`${BASE_URL}/resume/analyze`, {

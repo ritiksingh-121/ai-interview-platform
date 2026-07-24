@@ -101,6 +101,7 @@ model User {
   githubAnalyses    GitHubAnalysis[]
   portfolioAnalyses PortfolioAnalysis[]
   answers Answer[]
+  proctoringSessions ProctoringSession[]
 }
 
 model Interview {
@@ -137,6 +138,7 @@ model Interview {
   feedback Feedback[]
   questions Question[]
   invites InterviewInvite[]
+  proctoringSessions ProctoringSession[]
 }
 
 model InterviewMessage {
@@ -423,4 +425,131 @@ model InterviewInvite {
   message        String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+enum ViolationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ViolationType {
+  FULLSCREEN_EXIT
+  TAB_SWITCH
+  WINDOW_BLUR
+  KEYBOARD_SHORTCUT
+  MULTI_MONITOR
+  NO_FACE
+  MULTIPLE_FACES
+  FACE_COVERED
+  LOOKING_AWAY
+  EYES_CLOSED
+  HEAD_TURNED
+  PERSON_LEFT
+  PHONE_DETECTED
+  TABLET_DETECTED
+  BOOK_DETECTED
+  SECOND_PERSON
+  HAND_COVERING_CAMERA
+  LOW_LIGHTING
+  CAMERA_BLOCKED
+  CAMERA_DISCONNECTED
+  IDENTITY_MISMATCH
+  SECOND_VOICE
+  BACKGROUND_SPEECH
+  DEVELOPER_TOOLS
+  VIEWPORT_RESIZE
+  CONSOLE_OPEN
+  DEBUGGER_PAUSE
+  NETWORK_OFFLINE
+  VPN_DETECTED
+  COPY_PASTE
+  SCREENSHOT
+  SCREEN_RECORDING
+  AI_ASSISTANCE_SUSPICION
+  SUSPICIOUS_EYE_MOVEMENT
+  FREQUENT_SIDE_READING
+  RAPID_GAZE_SWITCHING
+  AUTOMATION_DETECTED
+  HEADLESS_BROWSER
+  EMULATOR_DETECTED
+}
+
+enum ProctoringStatus {
+  ACTIVE
+  TERMINATED
+  COMPLETED
+}
+
+enum StrictMode {
+  EASY
+  MEDIUM
+  STRICT
+}
+
+model ProctoringSession {
+  id              String          @id @default(cuid())
+  interviewId     String?
+  interview       Interview?      @relation(fields: [interviewId], references: [id])
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  status          ProctoringStatus @default(ACTIVE)
+  strictMode      StrictMode      @default(MEDIUM)
+  integrityScore  Int?
+  cheatingProbability Int?
+  violationCount  Int             @default(0)
+  maxViolations   Int             @default(10)
+  tabSwitchCount  Int             @default(0)
+  fullscreenExits Int             @default(0)
+  faceCapture     String?
+  startedAt       DateTime        @default(now())
+  terminatedAt    DateTime?
+  terminationReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  violations      Violation[]
+  snapshots       ProctoringSnapshot[]
+  adminActions    AdminAction[]
+}
+
+model Violation {
+  id              String          @id @default(cuid())
+  sessionId       String
+  session         ProctoringSession @relation(fields: [sessionId], references: [id])
+  type            ViolationType
+  severity        ViolationSeverity
+  message         String
+  timestamp       DateTime        @default(now())
+  screenshot      String?
+  faceImage       String?
+  audioClip       String?
+  currentQuestion String?
+  browserStatus   String?
+  cameraStatus    String?
+  metadata        String?
+  dismissed       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+}
+
+model ProctoringSnapshot {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         ProctoringSession @relation(fields: [sessionId], references: [id])
+  type            String
+  data            String?
+  imageUrl        String?
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+}
+
+model AdminAction {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         ProctoringSession @relation(fields: [sessionId], references: [id])
+  action          String
+  note            String?
+  performedBy     String
+  createdAt       DateTime @default(now())
 }

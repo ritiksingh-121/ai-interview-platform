@@ -1,7 +1,8 @@
 import { loadStripe } from "@stripe/stripe-js";
+import { auth } from "../firebase";
 
 export async function handleCheckout(plan) {
-  console.log("Clicked plan:", plan);
+  const user = auth.currentUser;
 
   const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -13,7 +14,7 @@ const res = await fetch(`${BACKEND_URL}/create-checkout-session`,  {
     },
     body: JSON.stringify({
       plan,
-      userId: "test_user"
+      userId: user?.uid || "unknown"
     })
   });
 
