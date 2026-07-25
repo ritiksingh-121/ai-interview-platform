@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -6,8 +7,11 @@ import Badge from "../components/ui/Badge";
 import ScoreGauge from "../components/ui/ScoreGauge";
 import { LoadingSpinner } from "../components/ui/Loading";
 import { getCompletion, safeParseJSON } from "../api/api";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 export default function STARBuilder() {
+  const navigate = useNavigate();
   const [situation, setSituation] = useState("");
   const [task, setTask] = useState("");
   const [action, setAction] = useState("");
@@ -54,10 +58,15 @@ export default function STARBuilder() {
     }
   };
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-32 pb-safe px-4 sm:px-8 max-w-7xl mx-auto space-y-10">
       {/* HEADER */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 flex-1">
         <Badge variant="cyan" className="px-3 py-1 uppercase tracking-wider text-[10px]">
           🎯 Behavioral Story Coach
         </Badge>
@@ -66,6 +75,8 @@ export default function STARBuilder() {
           Refine your behavioral experience stories using the Situation-Task-Action-Result methodology. Receive real-time AI scoring and improved narrative scripts.
         </p>
       </motion.div>
+        <button onClick={openExitDialog} className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium shrink-0 self-start">Exit</button>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* INPUT FORM */}
@@ -193,6 +204,12 @@ export default function STARBuilder() {
           </div>
         </Card>
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

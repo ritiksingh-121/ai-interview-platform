@@ -4,16 +4,21 @@ import Button from "../ui/Button";
 interface FullscreenEnforcerProps {
   onFullscreen: () => void;
   isFullscreen: boolean;
+  reEntry?: boolean;
 }
 
-export default function FullscreenEnforcer({ onFullscreen, isFullscreen }: FullscreenEnforcerProps) {
-  const [showPrompt, setShowPrompt] = useState(true);
+export default function FullscreenEnforcer({ onFullscreen, isFullscreen, reEntry }: FullscreenEnforcerProps) {
+  const [showPrompt, setShowPrompt] = useState(!reEntry);
 
   useEffect(() => {
-    if (isFullscreen) setShowPrompt(false);
-  }, [isFullscreen]);
+    if (!reEntry && isFullscreen) setShowPrompt(false);
+  }, [reEntry, isFullscreen]);
 
-  if (!showPrompt) return null;
+  if (reEntry) {
+    if (isFullscreen) return null;
+  } else if (!showPrompt) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
@@ -25,10 +30,11 @@ export default function FullscreenEnforcer({ onFullscreen, isFullscreen }: Fulls
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-white">Enter Fullscreen Mode</h2>
+          <h2 className="text-xl font-bold text-white">{reEntry ? "Fullscreen Exited" : "Enter Fullscreen Mode"}</h2>
           <p className="text-sm text-zinc-400">
-            This interview requires fullscreen mode to maintain a secure testing environment.
-            Please click the button below to continue.
+            {reEntry
+              ? "You have exited fullscreen mode. Fullscreen is required to continue the interview securely."
+              : "This interview requires fullscreen mode to maintain a secure testing environment. Please click the button below to continue."}
           </p>
         </div>
 
@@ -53,7 +59,7 @@ export default function FullscreenEnforcer({ onFullscreen, isFullscreen }: Fulls
           onClick={onFullscreen}
           className="w-full justify-center"
         >
-          Enter Fullscreen & Start Interview
+          {reEntry ? "Return to Fullscreen" : "Enter Fullscreen & Start Interview"}
         </Button>
       </div>
     </div>

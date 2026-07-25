@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -6,6 +7,8 @@ import Badge from "../components/ui/Badge";
 import Toast from "../components/ui/Toast";
 import { LoadingSpinner } from "../components/ui/Loading";
 import { getCompletion } from "../api/api";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const platforms = [
   { value: "linkedin", label: "LinkedIn Message" },
@@ -21,6 +24,7 @@ const goals = [
 ];
 
 export default function OutreachHelper() {
+  const navigate = useNavigate();
   const [platform, setPlatform] = useState("linkedin");
   const [goal, setGoal] = useState("referral");
   const [recipientName, setRecipientName] = useState("");
@@ -60,12 +64,17 @@ export default function OutreachHelper() {
     setTimeout(() => setToast(false), 3000);
   };
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pt-32 pb-safe px-4 sm:px-8 max-w-7xl mx-auto space-y-10">
       <Toast show={toast} message="Outreach pitch copied to clipboard!" type="success" />
 
       {/* HEADER */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 flex-1">
         <Badge variant="cyan" className="px-3 py-1 uppercase tracking-wider text-[10px]">
           📣 Cold Outreach Assistant
         </Badge>
@@ -74,6 +83,8 @@ export default function OutreachHelper() {
           Generate high-converting LinkedIn connection pitches, cold emails, and Twitter DMs for recruiters, hiring managers, and engineers.
         </p>
       </motion.div>
+        <button onClick={openExitDialog} className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium shrink-0 self-start">Exit</button>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* INPUT FORM */}
@@ -203,6 +214,12 @@ export default function OutreachHelper() {
           </div>
         </Card>
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -14,6 +17,7 @@ function CodeReview() {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const analyzeCode = async () => {
     if (!code.trim()) return;
@@ -82,12 +86,19 @@ function CodeReview() {
     );
   };
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-24 pb-24 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">AI Code Review</h1>
-          <p className="text-zinc-400 text-sm mt-1">Get instant AI-powered code reviews — quality, complexity, security, and best practices</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">AI Code Review</h1>
+            <p className="text-zinc-400 text-sm mt-1">Get instant AI-powered code reviews — quality, complexity, security, and best practices</p>
+          </div>
+          <button onClick={openExitDialog} className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium shrink-0">Exit</button>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -314,6 +325,12 @@ function CodeReview() {
           </div>
         </div>
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

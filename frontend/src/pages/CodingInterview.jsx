@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { auth } from "../firebase";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -59,6 +62,7 @@ function CodingInterview() {
   const timerRef = useRef(null);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => {
@@ -148,6 +152,22 @@ function CodingInterview() {
     } catch { /* silent */ }
   };
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    onExit: async () => {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      if (phase === "coding" && session?.id && uid) {
+        try {
+          await fetch(`${BASE}/coding/save`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId: session.id, code, language, firebaseUid: uid, timeSpent: elapsed }),
+          });
+        } catch {}
+      }
+    },
+    navigateTo: "/dashboard",
+  });
+
   const changeLanguage = async (newLang) => {
     setLanguage(newLang);
     const starterCodes = {
@@ -168,9 +188,17 @@ function CodingInterview() {
       {/* Setup Phase */}
       {phase === "setup" && (
         <div className="max-w-2xl mx-auto pt-12 px-4 space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Coding Interview</h1>
-            <p className="text-zinc-400 text-sm mt-1">Practice coding problems in a realistic interview environment</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Coding Interview</h1>
+              <p className="text-zinc-400 text-sm mt-1">Practice coding problems in a realistic interview environment</p>
+            </div>
+            <button
+              onClick={openExitDialog}
+              className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium shrink-0"
+            >
+              Exit
+            </button>
           </div>
 
           <div className="rounded-2xl bg-zinc-900/80 border border-zinc-800/80 p-6 space-y-4">
@@ -270,6 +298,12 @@ function CodingInterview() {
                 <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <span className="text-sm font-mono text-zinc-300">{formatTime(elapsed)}</span>
               </div>
+              <button
+                onClick={openExitDialog}
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium"
+              >
+                Exit
+              </button>
             </div>
           </div>
 
@@ -478,6 +512,12 @@ function CodingInterview() {
           </div>
         </div>
       )}
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

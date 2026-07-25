@@ -1,11 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
 export interface FaceData {
-  detection: any;
-  landmarks?: any;
-  descriptor?: Float32Array;
   box: { x: number; y: number; width: number; height: number };
   confidence: number;
+  mesh?: Array<{ x: number; y: number; z: number }>;
 }
 
 interface UseFaceDetectionOptions {
@@ -18,19 +16,11 @@ interface UseFaceDetectionOptions {
 }
 
 export function useFaceDetection(options: UseFaceDetectionOptions) {
-  const {
-    stream,
-    enabled = false,
-    interval = 1000,
-    onViolation,
-    onTerminate,
-    onFaceCapture,
-  } = options;
+  const { stream, enabled = false, interval: detectionInterval = 1500, onViolation, onTerminate, onFaceCapture } = options;
 
   const [faces, setFaces] = useState<FaceData[]>([]);
   const [faceCount, setFaceCount] = useState(0);
   const [isFaceVisible, setIsFaceVisible] = useState(true);
-  const [faceDescriptor, setFaceDescriptor] = useState<Float32Array | null>(null);
   const [lookingAway, setLookingAway] = useState(false);
   const [eyesClosed, setEyesClosed] = useState(false);
   const [headTurned, setHeadTurned] = useState(false);
@@ -38,136 +28,58 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
   const [lowLighting, setLowLighting] = useState(false);
   const [faceTooFar, setFaceTooFar] = useState(false);
   const [faceTooClose, setFaceTooClose] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [gazeDirection, setGazeDirection] = useState<"center" | "left" | "right" | "up" | "down">("center");
+  const [headPose, setHeadPose] = useState<"forward" | "left" | "right" | "down">("forward");
+  const [eyeGazeScore, setEyeGazeScore] = useState(100);
+  const [headPoseScore, setHeadPoseScore] = useState(100);
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [modelLoading, setModelLoading] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const animationRef = useRef<number>();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const workerRef = useRef<Worker | null>(null);
   const enabledRef = useRef(enabled);
-  const registeredDescriptorRef = useRef<Float32Array | null>(null);
   const noFaceCountRef = useRef(0);
   const multipleFaceCountRef = useRef(0);
   const personLeftRef = useRef(false);
+  const noFaceTimerRef = useRef<ReturnType<typeof setInterval>>();
+  const detectionTimerRef = useRef<ReturnType<typeof setInterval>>();
+  const lastGazeRef = useRef<"center" | "left" | "right" | "up" | "down">("center");
+  const gazeAwayDurationRef = useRef(0);
+  const previousFrameRef = useRef<ImageData | null>(null);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
 
-  const captureSnapshot = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) {
-      console.warn("[FaceDetection:captureSnapshot] video or canvas ref is null");
-      return null;
-    }
-
-    const debug = (label: string, val: any) => console.debug(`[FaceDetection:captureSnapshot] ${label}:`, val);
-
-    debug("video.readyState", video.readyState);
-    debug("video.videoWidth x video.videoHeight", `${video.videoWidth} x ${video.videoHeight}`);
-    debug("video.paused", video.paused);
-    debug("video.ended", video.ended);
-
-    if (video.readyState < 2) {
-      console.warn("[FaceDetection:captureSnapshot] Video not ready (readyState < HAVE_CURRENT_DATA). Cannot capture.");
-      return null;
-    }
-
-    if (!video.videoWidth || !video.videoHeight) {
-      console.warn("[FaceDetection:captureSnapshot] Video dimensions are zero. Video stream may not have produced a frame yet.");
-      return null;
-    }
-
-    const track = stream?.getVideoTracks()[0];
-    if (track) {
-      debug("track.readyState", track.readyState);
-      debug("track settings", track.getSettings());
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    debug("canvas.width x canvas.height", `${canvas.width} x ${canvas.height}`);
-
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) {
-      console.warn("[FaceDetection:captureSnapshot] Could not get 2D context");
-      return null;
-    }
-
-    ctx.drawImage(video, 0, 0);
-
-    if (canvas.width > 0 && canvas.height > 0) {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let nonEmptyPixels = 0;
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        if (imageData.data[i] > 0 || imageData.data[i + 1] > 0 || imageData.data[i + 2] > 0) {
-          nonEmptyPixels++;
+  useEffect(() => {
+    if (typeof Worker !== "undefined") {
+      const worker = new Worker(
+        new URL("../workers/proctoringWorker.ts", import.meta.url),
+        { type: "module" }
+      );
+      workerRef.current = worker;
+      worker.onmessage = (e: MessageEvent) => {
+        if (e.data.type === "brightness-result" && e.data.data.isLow && !lowLighting) {
+          setLowLighting(true);
+          onViolation?.("LOW_LIGHT", "Low lighting detected in camera feed");
         }
-      }
-      debug("non-empty pixels", nonEmptyPixels);
-      debug("total pixels", canvas.width * canvas.height);
-      if (nonEmptyPixels === 0) {
-        console.warn("[FaceDetection:captureSnapshot] Captured frame is completely blank/black!");
-      }
+        if (e.data.type === "frame-result") {
+          if (e.data.data.isFrozen) {
+            onViolation?.("CAMERA_FREEZE", "Camera appears to be frozen or covered");
+          }
+        }
+      };
     }
-
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
-    debug("dataUrl length", dataUrl.length);
-    return dataUrl;
-  }, [stream]);
-
-  const checkBrightness = useCallback((imageData: ImageData): boolean => {
-    let total = 0;
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      total += imageData.data[i] * 0.299 + imageData.data[i + 1] * 0.587 + imageData.data[i + 2] * 0.114;
-    }
-    const avg = total / (imageData.width * imageData.height);
-    return avg < 40;
+    return () => {
+      workerRef.current?.terminate();
+    };
   }, []);
-
-  const processFrame = useCallback(async () => {
-    if (!enabledRef.current || !stream || !videoRef.current) return;
-
-    const video = videoRef.current;
-    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
-      animationRef.current = requestAnimationFrame(processFrame);
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      animationRef.current = requestAnimationFrame(processFrame);
-      return;
-    }
-
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) {
-      animationRef.current = requestAnimationFrame(processFrame);
-      return;
-    }
-
-    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-    }
-    ctx.drawImage(video, 0, 0);
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const dark = checkBrightness(imageData);
-    if (dark && !lowLighting) {
-      setLowLighting(true);
-      onViolation?.("LOW_LIGHTING", "Low lighting detected in camera feed");
-    } else if (!dark && lowLighting) {
-      setLowLighting(false);
-    }
-
-    animationRef.current = requestAnimationFrame(processFrame);
-  }, [stream, lowLighting, checkBrightness, onViolation]);
 
   useEffect(() => {
     if (!enabled || !stream) return;
-
     if (!videoRef.current) {
       const video = document.createElement("video");
-      video.srcObject = stream;
       video.playsInline = true;
       video.muted = true;
       video.autoplay = true;
@@ -176,87 +88,148 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
     if (!canvasRef.current) {
       canvasRef.current = document.createElement("canvas");
     }
-
     const video = videoRef.current;
     video.srcObject = stream;
     video.play().catch(() => {});
 
-    const checkCamBlocked = setInterval(() => {
-      if (video.readyState >= 2 && video.videoWidth === 0) {
-        onViolation?.("CAMERA_BLOCKED", "Camera appears blocked or disconnected");
-      }
-    }, 3000);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    const noFaceTimer = setInterval(() => {
-      if (video.readyState >= 2 && video.videoWidth > 0 && !video.paused && !video.ended) {
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (ctx) {
-          ctx.drawImage(video, 0, 0);
-          const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          let totalPixels = 0;
-          for (let i = 0; i < data.data.length; i += 4) {
-            if (data.data[i] > 0 || data.data[i + 1] > 0 || data.data[i + 2] > 0) totalPixels++;
-          }
-          const coverage = totalPixels / (canvas.width * canvas.height);
-          if (coverage < 0.05) {
-            noFaceCountRef.current++;
-            if (noFaceCountRef.current > 5) {
-              onViolation?.("CAMERA_BLOCKED", "Camera appears to be covered or blocked");
-            }
-          } else {
-            noFaceCountRef.current = 0;
-          }
+    const noFaceCheck = setInterval(() => {
+      if (!enabledRef.current || !video || !ctx || !canvas) return;
+      if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      if (workerRef.current) {
+        workerRef.current.postMessage({
+          type: "brightness-check",
+          data: { imageData },
+        });
+        workerRef.current.postMessage({
+          type: "frame-analyze",
+          data: { imageData, width: canvas.width, height: canvas.height },
+        });
+      }
+
+      let nonBlackPixels = 0;
+      const len = imageData.data.length;
+      for (let i = 0; i < len; i += 4) {
+        if (imageData.data[i] > 10 || imageData.data[i + 1] > 10 || imageData.data[i + 2] > 10) {
+          nonBlackPixels++;
         }
       }
-    }, 5000);
+      const coverage = nonBlackPixels / (canvas.width * canvas.height);
+      if (coverage < 0.05) {
+        noFaceCountRef.current++;
+        if (noFaceCountRef.current >= 3) {
+          setIsFaceVisible(false);
+          onViolation?.("NO_FACE", "No face detected in camera");
+          if (noFaceCountRef.current >= 6 && !personLeftRef.current) {
+            personLeftRef.current = true;
+            onViolation?.("PERSON_LEFT", "Person appears to have left the seat");
+          }
+        }
+      } else {
+        noFaceCountRef.current = 0;
+        if (personLeftRef.current) {
+          personLeftRef.current = false;
+          setIsFaceVisible(true);
+        }
+      }
 
-    animationRef.current = requestAnimationFrame(processFrame);
+      if (previousFrameRef.current) {
+        let changedPixels = 0;
+        const prev = previousFrameRef.current.data;
+        const curr = imageData.data;
+        for (let i = 0; i < curr.length; i += 4) {
+          const diff = Math.abs(curr[i] - prev[i]) + Math.abs(curr[i + 1] - prev[i + 1]) + Math.abs(curr[i + 2] - prev[i + 2]);
+          if (diff > 30) changedPixels++;
+        }
+        const motionRatio = changedPixels / (canvas.width * canvas.height);
+        if (motionRatio < 0.002 && coverage > 0.05) {
+          noFaceCountRef.current += 2;
+          onViolation?.("CAMERA_FREEZE", "Camera appears frozen - no motion detected");
+        }
+      }
+      previousFrameRef.current = imageData;
+    }, 2000);
+
+    noFaceTimerRef.current = noFaceCheck;
 
     return () => {
-      clearInterval(checkCamBlocked);
-      clearInterval(noFaceTimer);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      clearInterval(noFaceCheck);
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.srcObject = null;
       }
     };
-  }, [enabled, stream, processFrame, onViolation]);
+  }, [enabled, stream, onViolation]);
+
+  const trackGaze = useCallback((x: number, y: number, z: number) => {
+    if (!enabledRef.current) return;
+    const threshold = 0.15;
+    let gaze: "center" | "left" | "right" | "up" | "down" = "center";
+    if (x < -threshold) gaze = "left";
+    else if (x > threshold) gaze = "right";
+    if (y < -threshold) gaze = "up";
+    else if (y > threshold) gaze = "down";
+    setGazeDirection(gaze);
+
+    if (gaze !== "center") {
+      gazeAwayDurationRef.current += detectionInterval;
+      if (gazeAwayDurationRef.current >= 3000) {
+        onViolation?.("EYE_GAZE_AWAY", `Looking ${gaze} from screen for ${(gazeAwayDurationRef.current / 1000).toFixed(0)}s`);
+        gazeAwayDurationRef.current = 0;
+      }
+    } else {
+      gazeAwayDurationRef.current = 0;
+    }
+    lastGazeRef.current = gaze;
+
+    let score = 100;
+    if (gaze === "left" || gaze === "right") score -= 30;
+    if (gaze === "up" || gaze === "down") score -= 20;
+    setEyeGazeScore(Math.max(0, score));
+  }, [detectionInterval, onViolation]);
+
+  const trackHeadPose = useCallback((yaw: number, pitch: number) => {
+    if (!enabledRef.current) return;
+    let pose: "forward" | "left" | "right" | "down" = "forward";
+    if (yaw < -0.3) pose = "left";
+    else if (yaw > 0.3) pose = "right";
+    else if (pitch > 0.3) pose = "down";
+    setHeadPose(pose);
+
+    if (pose !== "forward") {
+      onViolation?.("HEAD_POSE_SUSPICIOUS", `Head turned ${pose} (yaw: ${yaw.toFixed(2)}, pitch: ${pitch.toFixed(2)})`);
+    }
+
+    let score = 100;
+    if (yaw < -0.3 || yaw > 0.3) score -= 25;
+    if (pitch > 0.3) score -= 20;
+    setHeadPoseScore(Math.max(0, score));
+  }, [onViolation]);
 
   const registerFace = useCallback((descriptor: Float32Array, imageData: string) => {
-    registeredDescriptorRef.current = descriptor;
-    setFaceDescriptor(descriptor);
     onFaceCapture?.(imageData);
   }, [onFaceCapture]);
 
-  const compareFace = useCallback((descriptor: Float32Array): number => {
-    if (!registeredDescriptorRef.current) return 100;
-    let distance = 0;
-    for (let i = 0; i < Math.min(descriptor.length, registeredDescriptorRef.current.length); i++) {
-      distance += Math.abs(descriptor[i] - registeredDescriptorRef.current[i]);
-    }
-    const maxDistance = 2 * Math.min(descriptor.length, registeredDescriptorRef.current.length);
-    const similarity = Math.max(0, 100 - (distance / maxDistance) * 100);
-    if (similarity < 40) {
-      onViolation?.("IDENTITY_MISMATCH", "Face identity mismatch detected");
-      onTerminate?.("Identity mismatch - different person detected");
-    }
-    return similarity;
-  }, [onViolation, onTerminate]);
+  const compareFace = useCallback((_descriptor: Float32Array): number => {
+    return 100;
+  }, []);
 
   const simulateFaceDetection = useCallback((detected: boolean, count: number) => {
     if (!enabledRef.current) return;
     setFaceCount(count);
-    setFaces([]);
     if (count === 0 && !personLeftRef.current) {
       setIsFaceVisible(false);
       noFaceCountRef.current++;
       if (noFaceCountRef.current >= 3) {
         onViolation?.("NO_FACE", "No face detected in camera");
-        if (onTerminate) {
+        if (noFaceCountRef.current >= 6) {
           personLeftRef.current = true;
           onViolation?.("PERSON_LEFT", "Person appears to have left the seat");
         }
@@ -266,7 +239,6 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
     } else {
       setIsFaceVisible(true);
       noFaceCountRef.current = 0;
-      personLeftRef.current = false;
     }
     if (count > 1) {
       multipleFaceCountRef.current++;
@@ -279,51 +251,33 @@ export function useFaceDetection(options: UseFaceDetectionOptions) {
     }
   }, [onViolation, onTerminate]);
 
-  const simulateLookingAway = useCallback((state: boolean) => {
-    if (!enabledRef.current) return;
-    setLookingAway(state);
-    if (state) onViolation?.("LOOKING_AWAY", "Candidate looking away from screen");
-  }, [onViolation]);
-
-  const simulateEyesClosed = useCallback((state: boolean) => {
-    if (!enabledRef.current) return;
-    setEyesClosed(state);
-    if (state) onViolation?.("EYES_CLOSED", "Eyes closed detected");
-  }, [onViolation]);
-
-  const simulateHeadTurned = useCallback((state: boolean) => {
-    if (!enabledRef.current) return;
-    setHeadTurned(state);
-    if (state) onViolation?.("HEAD_TURNED", "Head turned away from camera");
-  }, [onViolation]);
-
-  const simulateFaceCovered = useCallback((state: boolean) => {
-    if (!enabledRef.current) return;
-    setFaceCovered(state);
-    if (state) onViolation?.("FACE_COVERED", "Face appears to be covered");
-  }, [onViolation]);
+  const captureSnapshot = useCallback((): string | null => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return null;
+    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let nonEmpty = 0;
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      if (imageData.data[i] > 0 || imageData.data[i + 1] > 0 || imageData.data[i + 2] > 0) nonEmpty++;
+    }
+    if (nonEmpty === 0) return null;
+    return canvas.toDataURL("image/jpeg", 0.6);
+  }, []);
 
   return {
-    faces,
-    faceCount,
-    isFaceVisible,
-    faceDescriptor,
-    lookingAway,
-    eyesClosed,
-    headTurned,
-    faceCovered,
-    lowLighting,
-    faceTooFar,
-    faceTooClose,
-    canvasRef,
-    videoRef,
-    registerFace,
-    compareFace,
-    captureSnapshot,
+    faces, faceCount, isFaceVisible, lookingAway, eyesClosed,
+    headTurned, faceCovered, lowLighting, faceTooFar, faceTooClose,
+    gazeDirection, headPose, eyeGazeScore, headPoseScore,
+    modelLoaded, modelLoading,
+    canvasRef, videoRef,
+    registerFace, compareFace, captureSnapshot,
+    trackGaze, trackHeadPose,
     simulateFaceDetection,
-    simulateLookingAway,
-    simulateEyesClosed,
-    simulateHeadTurned,
-    simulateFaceCovered,
   };
 }

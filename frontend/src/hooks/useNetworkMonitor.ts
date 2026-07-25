@@ -10,6 +10,7 @@ interface NetworkInfo {
   downlink?: number;
   effectiveType?: string;
   rtt?: number;
+  latencySpikes: number;
 }
 
 export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
@@ -17,9 +18,12 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
   const [networkInfo, setNetworkInfo] = useState<NetworkInfo>({
     isOnline: navigator.onLine,
     latency: null,
+    latencySpikes: 0,
   });
   const wasOfflineRef = useRef(false);
   const enabledRef = useRef(false);
+  const spikeCountRef = useRef(0);
+  const latencyHistoryRef = useRef<number[]>([]);
   const onViolationRef = useRef(onViolation);
   onViolationRef.current = onViolation;
 
@@ -27,11 +31,28 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
     if (!enabledRef.current) return;
     const start = performance.now();
     try {
-      await fetch("/api/health", { method: "HEAD", cache: "no-store" });
+      await fetch("/api/health", { method: "HEAD", cache: "no-store", signal: AbortSignal.timeout(5000) });
       const latency = Math.round(performance.now() - start);
-      setNetworkInfo((prev) => ({ ...prev, latency }));
-    } catch {}
+      latencyHistoryRef.current.push(latency);
+      if (latencyHistoryRef.current.length > 10) {
+        latencyHistoryRef.current = latencyHistoryRef.current.slice(-10);
+      }
+      const avgLatency = latencyHistoryRef.current.reduce((a, b) => a + b, 0) / latencyHistoryRef.current.length;
+      if (latency > avgLatency * 3 && latency > 1000) {
+        spikeCountRef.current++;
+        onViolationRef.current?.("NETWORK_LATENCY", `Latency spike: ${latency}ms (avg: ${Math.round(avgLatency)}ms)`);
+      }
+      setNetworkInfo((prev) => ({
+        ...prev, latency,
+        latencySpikes: spikeCountRef.current,
+      }));
+    } catch {
+      setNetworkInfo((prev) => ({ ...prev, latency: null }));
+    }
   }, []);
+
+  const handleOnlineRef = useRef<(e: Event) => void>();
+  const handleOfflineRef = useRef<(e: Event) => void>();
 
   useEffect(() => {
     if (!enabledRef.current) return;
@@ -42,7 +63,6 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
         onViolationRef.current?.("NETWORK_RECONNECT", "Network reconnected after being offline");
       }
       wasOfflineRef.current = false;
-      checkLatency();
     };
 
     const handleOffline = () => {
@@ -50,6 +70,9 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
       wasOfflineRef.current = true;
       onViolationRef.current?.("NETWORK_OFFLINE", "Network connection lost");
     };
+
+    handleOnlineRef.current = handleOnline;
+    handleOfflineRef.current = handleOffline;
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -64,9 +87,6 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
             effectiveType: conn.effectiveType,
             rtt: conn.rtt,
           }));
-          if (conn.rtt && conn.rtt > 1000) {
-            onViolationRef.current?.("HIGH_LATENCY", `High latency detected: ${conn.rtt}ms`);
-          }
         };
         updateConnection();
         conn.addEventListener("change", updateConnection);
@@ -78,21 +98,19 @@ export function useNetworkMonitor(options: UseNetworkMonitorOptions = {}) {
       }
     }
 
-    const interval = setInterval(checkLatency, 30000);
-
+    const interval = setInterval(checkLatency, 15000);
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
-  }, [checkLatency]);
+  }, []);
 
-  const enable = useCallback(() => { enabledRef.current = true; }, []);
+  const enable = useCallback(() => {
+    enabledRef.current = true;
+    checkLatency();
+  }, [checkLatency]);
   const disable = useCallback(() => { enabledRef.current = false; }, []);
 
-  return {
-    ...networkInfo,
-    enable,
-    disable,
-  };
+  return { ...networkInfo, enable, disable };
 }

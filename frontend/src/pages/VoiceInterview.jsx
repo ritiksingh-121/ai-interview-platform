@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import AudioWaveform from "../components/ui/AudioWaveform";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -18,6 +21,7 @@ function VoiceInterview() {
   const [error, setError] = useState("");
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => { if (u) { setUser(u); setUid(u.uid); } });
@@ -131,12 +135,33 @@ function VoiceInterview() {
     else startListening();
   };
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    onExit: () => {
+      synthRef.current?.cancel();
+      stopListening();
+      setPhase("setup");
+      setQuestions([]);
+      setResults([]);
+      setTranscript("");
+      setError("");
+    },
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-24 pb-24 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Voice Interview</h1>
-          <p className="text-zinc-400 text-sm mt-1">Practice answering interview questions aloud with real-time speech analysis</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Voice Interview</h1>
+            <p className="text-zinc-400 text-sm mt-1">Practice answering interview questions aloud with real-time speech analysis</p>
+          </div>
+          <button
+            onClick={openExitDialog}
+            className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium shrink-0"
+          >
+            Exit
+          </button>
         </div>
 
         {error && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">{error}</div>}
@@ -289,6 +314,12 @@ function VoiceInterview() {
           </div>
         )}
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

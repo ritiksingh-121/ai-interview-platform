@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -8,8 +9,11 @@ import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import { LoadingSpinner } from "../components/ui/Loading";
 import { fadeUp, staggerContainer } from "../lib/motion";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 export default function Roadmap() {
+  const navigate = useNavigate();
   const [roadmaps, setRoadmaps] = useState([]);
   const [activeRoadmap, setActiveRoadmap] = useState(null);
   const [duration, setDuration] = useState(30);
@@ -61,9 +65,19 @@ export default function Roadmap() {
     ? Math.round((activeRoadmap.items.filter((i) => i.completed).length / activeRoadmap.items.length) * 100)
     : 0;
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-safe">
       <section className="relative pt-32 pb-10 px-4 sm:px-8 overflow-hidden">
+        <button
+          onClick={openExitDialog}
+          className="absolute top-4 right-4 sm:right-8 z-20 px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium"
+        >
+          Exit
+        </button>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-emerald-950/20 to-transparent" />
         </div>
@@ -196,6 +210,12 @@ export default function Roadmap() {
           </Card>
         )}
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

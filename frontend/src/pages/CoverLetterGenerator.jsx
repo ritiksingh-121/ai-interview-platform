@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -6,8 +7,11 @@ import Badge from "../components/ui/Badge";
 import Toast from "../components/ui/Toast";
 import { LoadingSpinner } from "../components/ui/Loading";
 import { getCompletion } from "../api/api";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 export default function CoverLetterGenerator() {
+  const navigate = useNavigate();
   const [jobTitle, setJobTitle] = useState("");
   const [company, setCompany] = useState("");
   const [skills, setSkills] = useState("");
@@ -52,12 +56,22 @@ export default function CoverLetterGenerator() {
     { value: "storytelling", label: "Storytelling" },
   ];
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-safe">
       <Toast show={toast} message="Cover Letter copied to clipboard!" type="success" />
 
       {/* HERO HEADER */}
       <section className="relative pt-32 pb-10 px-4 sm:px-8 overflow-hidden">
+        <button
+          onClick={openExitDialog}
+          className="absolute top-4 right-4 sm:right-8 z-20 px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium"
+        >
+          Exit
+        </button>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-blue-950/20 to-transparent" />
           <div className="absolute top-10 right-1/4 w-64 h-40 rounded-full bg-indigo-600/8 blur-[80px]" />
@@ -187,6 +201,12 @@ export default function CoverLetterGenerator() {
           </div>
         </div>
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

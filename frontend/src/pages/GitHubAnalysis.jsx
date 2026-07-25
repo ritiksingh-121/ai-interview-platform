@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -11,6 +14,7 @@ function GitHubAnalysis() {
   const [analysis, setAnalysis] = useState(null);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => { if (u) { setUser(u); setUid(u.uid); } });
@@ -54,12 +58,19 @@ function GitHubAnalysis() {
     </div>
   );
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-24 pb-24 px-4">
       <div className="max-w-3xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">GitHub Profile Analysis</h1>
-          <p className="text-zinc-400 text-sm mt-1">Analyze your GitHub profile and generate interview questions based on your projects</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">GitHub Profile Analysis</h1>
+            <p className="text-zinc-400 text-sm mt-1">Analyze your GitHub profile and generate interview questions based on your projects</p>
+          </div>
+          <button onClick={openExitDialog} className="px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium shrink-0">Exit</button>
         </div>
 
         <div className="rounded-2xl bg-zinc-900/80 border border-zinc-800/80 p-6 space-y-4">
@@ -160,6 +171,12 @@ function GitHubAnalysis() {
           </div>
         )}
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

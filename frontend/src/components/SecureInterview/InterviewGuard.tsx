@@ -1,6 +1,7 @@
+import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ViolationEvent } from "../../hooks/useViolation";
-import { getSeverityColor, getViolationTypeLabel } from "../../utils/violationEngine";
+import type { ViolationEvent } from "../../hooks/useViolation";
+import { getViolationTypeLabel, getScoreColor, VIOLATION_SCORES } from "../../utils/violationEngine";
 
 interface InterviewGuardProps {
   isFullscreen: boolean;
@@ -14,6 +15,9 @@ interface InterviewGuardProps {
   latestViolations: ViolationEvent[];
   timeElapsed: number;
   suspicionScore?: number;
+  eyeGazeScore?: number;
+  headPoseScore?: number;
+  inline?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -22,79 +26,62 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
+function formatTimestamp(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+}
+
 export default function InterviewGuard({
-  isFullscreen,
-  isCameraActive,
-  isMicActive,
-  isOnline,
-  violationCount,
-  maxViolations,
-  criticalCount,
-  highCount,
-  latestViolations,
-  timeElapsed,
-  suspicionScore,
+  isFullscreen, isCameraActive, isMicActive, isOnline,
+  violationCount, maxViolations, criticalCount, highCount,
+  latestViolations, timeElapsed, suspicionScore,
+  eyeGazeScore, headPoseScore, inline,
 }: InterviewGuardProps) {
   const remaining = maxViolations - violationCount;
   const isWarning = remaining <= 3;
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const [showFullTimeline, setShowFullTimeline] = useState(false);
+
+  useEffect(() => {
+    if (timelineRef.current) {
+      timelineRef.current.scrollTop = 0;
+    }
+  }, [latestViolations]);
+
+  const displayViolations = showFullTimeline ? latestViolations : latestViolations.slice(0, 5);
 
   return (
-    <div className="fixed top-4 right-4 z-[9990] w-72 pointer-events-none">
+    <div className={inline ? "w-full" : "fixed top-4 right-4 z-[9990] w-72 pointer-events-none"}>
       <motion.div
-        initial={{ x: 320, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="pointer-events-auto bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+        initial={inline ? false : { x: 320, opacity: 0 }}
+        animate={inline ? {} : { x: 0, opacity: 1 }}
+        className={`${inline ? "bg-zinc-900/95 border border-zinc-800 rounded-2xl overflow-hidden" : "pointer-events-auto bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/50"}`}
       >
         <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Interview Guard</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+            <span className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${isFullscreen && isCameraActive && isMicActive ? "bg-emerald-400" : "bg-red-400"} ${isFullscreen ? "animate-pulse" : ""}`} />
+              Proctoring Guard
+            </span>
+          </span>
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${isWarning ? "bg-red-500/20 text-red-400" : "bg-zinc-800 text-zinc-500"}`}>
             {remaining}/{maxViolations}
           </span>
         </div>
 
         <div className="px-4 py-3 space-y-2.5">
-          <div className="grid grid-cols-2 gap-2">
-            <StatusItem
-              label="Fullscreen"
-              status={isFullscreen ? "active" : "inactive"}
-              icon={
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              }
-            />
-            <StatusItem
-              label="Camera"
-              status={isCameraActive ? "active" : "inactive"}
-              icon={
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              }
-            />
-            <StatusItem
-              label="Mic"
-              status={isMicActive ? "active" : "inactive"}
-              icon={
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              }
-            />
-            <StatusItem
-              label="Network"
-              status={isOnline ? "active" : "inactive"}
-              icon={
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0" />
-                </svg>
-              }
-            />
+          <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+            <span>{formatTime(timeElapsed)}</span>
+            <span className="flex items-center gap-1.5">
+              {criticalCount > 0 && <span className="text-red-400 font-bold">{criticalCount}C</span>}
+              {highCount > 0 && <span className="text-orange-400 font-bold">{highCount}H</span>}
+              <span className={`${isWarning ? "text-red-400" : "text-zinc-500"}`}>{violationCount}V</span>
+            </span>
           </div>
 
           {suspicionScore !== undefined && suspicionScore > 0 && (
             <div className="flex items-center gap-2 bg-zinc-950/50 rounded-lg px-3 py-2 border border-zinc-800">
-              <span className="text-[10px] font-medium text-zinc-500 uppercase">Suspicion</span>
+              <span className="text-[10px] font-medium text-zinc-500 uppercase">Risk</span>
               <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
@@ -107,19 +94,39 @@ export default function InterviewGuard({
             </div>
           )}
 
-          <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
-            <span>{formatTime(timeElapsed)}</span>
-            <span className="flex items-center gap-1">
-              {criticalCount > 0 && <span className="text-red-400">{criticalCount}C</span>}
-              {highCount > 0 && <span className="text-orange-400">{highCount}H</span>}
-              <span className={`${isWarning ? "text-red-400" : "text-zinc-500"}`}>{violationCount}V</span>
-            </span>
+          <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded ${isFullscreen ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              <span className={`w-1 h-1 rounded-full ${isFullscreen ? "bg-emerald-400" : "bg-red-400"}`} />
+              Fullscreen
+            </div>
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded ${isCameraActive ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              <span className={`w-1 h-1 rounded-full ${isCameraActive ? "bg-emerald-400" : "bg-red-400"}`} />
+              Camera
+            </div>
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded ${isMicActive ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              <span className={`w-1 h-1 rounded-full ${isMicActive ? "bg-emerald-400" : "bg-red-400"}`} />
+              Mic
+            </div>
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded ${isOnline ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              <span className={`w-1 h-1 rounded-full ${isOnline ? "bg-emerald-400" : "bg-red-400"}`} />
+              Network
+            </div>
           </div>
+
+          {eyeGazeScore !== undefined && eyeGazeScore < 100 && (
+            <div className="text-[9px] text-zinc-500 flex justify-between">
+              <span>Eye Gaze</span>
+              <span className={eyeGazeScore < 50 ? "text-red-400" : "text-yellow-400"}>{eyeGazeScore}%</span>
+            </div>
+          )}
 
           {isWarning && violationCount > 0 && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               <p className="text-[10px] text-red-400 font-medium">
-                {remaining === 0 ? "Termination imminent" : `${remaining} violation${remaining !== 1 ? "s" : ""} remaining before termination`}
+                {remaining === 0
+                  ? "Termination imminent"
+                  : `${remaining} violation${remaining !== 1 ? "s" : ""} remaining`
+                }
               </p>
             </div>
           )}
@@ -132,20 +139,47 @@ export default function InterviewGuard({
               animate={{ height: "auto" }}
               className="border-t border-zinc-800"
             >
-              <div className="px-4 py-2 space-y-1 max-h-24 overflow-y-auto no-scrollbar">
-                {latestViolations.slice(-3).map((v) => (
-                  <div key={v.id} className="flex items-start gap-2 py-1">
-                    <span className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${
-                      v.severity === "CRITICAL" ? "bg-red-500" :
-                      v.severity === "HIGH" ? "bg-orange-500" :
-                      v.severity === "MEDIUM" ? "bg-yellow-500" : "bg-zinc-500"
-                    }`} />
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-zinc-300 truncate">{getViolationTypeLabel(v.type)}</p>
-                      <p className="text-[9px] text-zinc-600">{new Date(v.timestamp).toLocaleTimeString()}</p>
+              <div className="px-3 py-2 border-b border-zinc-800/50 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Violation Timeline</span>
+                {latestViolations.length > 5 && (
+                  <button
+                    onClick={() => setShowFullTimeline(!showFullTimeline)}
+                    className="text-[9px] text-indigo-400 hover:text-indigo-300"
+                  >
+                    {showFullTimeline ? "Show Less" : `View All (${latestViolations.length})`}
+                  </button>
+                )}
+              </div>
+              <div
+                ref={timelineRef}
+                className={`px-3 py-1 space-y-0.5 overflow-y-auto no-scrollbar ${showFullTimeline ? "max-h-60" : "max-h-32"}`}
+              >
+                {displayViolations.map((v) => {
+                  const score = VIOLATION_SCORES[v.type] || 0;
+                  return (
+                    <div key={v.id} className="flex items-start gap-2 py-1 group hover:bg-zinc-800/30 rounded px-1 -mx-1 transition-colors">
+                      <span className="text-[9px] font-mono text-zinc-600 w-8 shrink-0 pt-0.5">
+                        {formatTimestamp(v.timestamp)}
+                      </span>
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${
+                        v.severity === "CRITICAL" ? "bg-red-500" :
+                        v.severity === "HIGH" ? "bg-orange-500" :
+                        v.severity === "MEDIUM" ? "bg-yellow-500" : "bg-zinc-500"
+                      }`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] text-zinc-300 truncate">{getViolationTypeLabel(v.type)}</p>
+                        {showFullTimeline && (
+                          <p className="text-[8px] text-zinc-600 truncate">{v.message}</p>
+                        )}
+                      </div>
+                      {score > 0 && (
+                        <span className={`text-[9px] font-bold font-mono ${getScoreColor(score)} shrink-0`}>
+                          +{score}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -155,10 +189,9 @@ export default function InterviewGuard({
   );
 }
 
-function StatusItem({ label, status, icon }: { label: string; status: "active" | "inactive"; icon: React.ReactNode }) {
+function StatusItem({ label, status }: { label: string; status: "active" | "inactive" }) {
   return (
     <div className="flex items-center gap-2 bg-zinc-950/50 rounded-lg px-2.5 py-2 border border-zinc-800">
-      <span className={status === "active" ? "text-emerald-400" : "text-red-400"}>{icon}</span>
       <div className="min-w-0">
         <p className="text-[10px] font-medium text-zinc-500">{label}</p>
         <div className="flex items-center gap-1">

@@ -9,6 +9,8 @@ import { analyzeResume } from "../api/api";
 import { auth } from "../firebase";
 import { fadeUp, staggerContainer } from "../lib/motion";
 import { useNavigate } from "react-router-dom";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const difficultyColors = {
   EASY: "success",
@@ -56,9 +58,19 @@ export default function ResumeTailor() {
     }
   };
 
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    navigateTo: "/dashboard",
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-safe">
       <section className="relative pt-32 pb-10 px-4 sm:px-8 overflow-hidden">
+        <button
+          onClick={openExitDialog}
+          className="absolute top-4 right-4 sm:right-8 z-20 px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all text-xs font-medium"
+        >
+          Exit
+        </button>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-blue-950/20 to-transparent" />
         </div>
@@ -318,6 +330,12 @@ export default function ResumeTailor() {
           )}
         </AnimatePresence>
       </div>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 }

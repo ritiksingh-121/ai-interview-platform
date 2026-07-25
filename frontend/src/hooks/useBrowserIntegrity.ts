@@ -8,25 +8,45 @@ interface UseBrowserIntegrityOptions {
 export function useBrowserIntegrity(options: UseBrowserIntegrityOptions = {}) {
   const { onViolation, onTerminate } = options;
   const [devToolsOpen, setDevToolsOpen] = useState(false);
-  const [consoleOpen, setConsoleOpen] = useState(false);
+  const [undockedDetected, setUndockedDetected] = useState(false);
   const [isAutomated, setIsAutomated] = useState(false);
+
   const enabledRef = useRef(false);
   const checkCountRef = useRef(0);
+  const lastWidthRef = useRef(window.outerWidth);
+  const lastHeightRef = useRef(window.outerHeight);
+  const devToolViolationsRef = useRef(0);
+  const onViolationRef = useRef(onViolation);
+  onViolationRef.current = onViolation;
+  const onTerminateRef = useRef(onTerminate);
+  onTerminateRef.current = onTerminate;
 
-  const detectDevTools = useCallback(() => {
+  const detectDevTools = useCallback((): boolean => {
     if (!enabledRef.current) return false;
-
     checkCountRef.current++;
 
     const threshold = 160;
-    const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-    const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+    const widthDiff = window.outerWidth - window.innerWidth;
+    const heightDiff = window.outerHeight - window.innerHeight;
+    const widthCheck = widthDiff > threshold;
+    const heightCheck = heightDiff > threshold;
 
-    if (widthThreshold || heightThreshold) {
-      if (!devToolsOpen) {
+    if (widthCheck || heightCheck) {
+      devToolViolationsRef.current++;
+      if (devToolViolationsRef.current === 1 || devToolViolationsRef.current % 3 === 0) {
         setDevToolsOpen(true);
-        onViolation?.("DEVELOPER_TOOLS", "Developer tools detected via viewport size");
+        onViolationRef.current?.("DEVELOPER_TOOLS", `Developer tools detected (w:${widthDiff}, h:${heightDiff})`);
       }
+      return true;
+    }
+    devToolViolationsRef.current = Math.max(0, devToolViolationsRef.current - 1);
+
+    const startTime = performance.now();
+    debugger;
+    const endTime = performance.now();
+    if (endTime - startTime > 100) {
+      setDevToolsOpen(true);
+      onViolationRef.current?.("DEBUGGER_PAUSE", "Debugger pause detected");
       return true;
     }
 
@@ -34,112 +54,105 @@ export function useBrowserIntegrity(options: UseBrowserIntegrityOptions = {}) {
       let debug = false;
       const elem = document.createElement("div");
       Object.defineProperty(elem, "id", {
-        get: () => {
-          debug = true;
-          return "";
-        },
+        get: () => { debug = true; return ""; },
       });
       console.log(elem);
       return debug;
     };
 
-    const startTime = performance.now();
-    debugger;
-    const endTime = performance.now();
-    if (endTime - startTime > 100) {
-      if (!devToolsOpen) {
-        setDevToolsOpen(true);
-        onViolation?.("DEBUGGER_PAUSE", "Debugger pause detected");
-      }
+    if (firefoxCheck()) {
+      setDevToolsOpen(true);
+      onViolationRef.current?.("DEVELOPER_TOOLS", "Developer tools detected (Firefox check)");
       return true;
     }
-
-    return false;
-  }, [devToolsOpen, onViolation]);
-
-  const detectAutomation = useCallback(() => {
-    if (!enabledRef.current) return;
-
-    const checks = [
-      { test: (navigator as any).webdriver, name: "webdriver" },
-      { test: (navigator as any).plugins?.length === 0 && (navigator as any).mimeTypes?.length === 0, name: "noPlugins" },
-      { test: !("chrome" in window), name: "noChrome" },
-      { test: (navigator as any).languages?.length === 0, name: "noLanguages" },
-      { test: !("onbeforeunload" in window), name: "noOnBeforeUnload" },
-      { test: (navigator as any).hardwareConcurrency === 0, name: "noConcurrency" },
-      { test: (navigator as any).deviceMemory === 0, name: "noDeviceMemory" },
-      { test: !navigator.mediaDevices?.enumerateDevices, name: "noEnumerateDevices" },
-    ];
-
-    const detected = checks.filter((c) => c.test);
-    if (detected.length > 1) {
-      setIsAutomated(true);
-      onViolation?.("AUTOMATION_DETECTED", `Automation detected: ${detected.map((d) => d.name).join(", ")}`);
-      onTerminate?.("Automation/headless browser detected");
-    }
-  }, [onViolation, onTerminate]);
-
-  const detectConsoleOpen = useCallback(() => {
-    if (!enabledRef.current) return;
-
-    const elem = new Image();
-    Object.defineProperty(elem, "id", {
-      get: () => {
-        setConsoleOpen(true);
-        onViolation?.("CONSOLE_OPEN", "Console inspection detected");
-        return "";
-      },
-    });
-    try {
-      console.log("%c", elem);
-    } catch {}
 
     const img = new Image();
     Object.defineProperty(img, "id", {
       get: () => {
-        onViolation?.("CONSOLE_OPEN", "DevTools console open detected");
+        setDevToolsOpen(true);
+        onViolationRef.current?.("CONSOLE_OPEN", "DevTools console open detected");
         return "";
       },
     });
     console.debug(img);
-  }, [onViolation]);
+
+    if (undockedDetected) {
+      const currentWidth = window.outerWidth;
+      const currentHeight = window.outerHeight;
+      if (Math.abs(currentWidth - lastWidthRef.current) > 50 || Math.abs(currentHeight - lastHeightRef.current) > 50) {
+        onViolationRef.current?.("DEVELOPER_TOOLS", "Undocked DevTools window detected via resize");
+        setUndockedDetected(true);
+      }
+      lastWidthRef.current = currentWidth;
+      lastHeightRef.current = currentHeight;
+    }
+
+    return false;
+  }, []);
+
+  const detectAutomation = useCallback(() => {
+    if (!enabledRef.current) return;
+    const checks = [
+      { test: (navigator as any).webdriver, name: "webdriver" },
+      { test: !("chrome" in window) && !("InstallTrigger" in window) && !navigator.plugins?.length, name: "noPlugins" },
+      { test: navigator.hardwareConcurrency === 0, name: "noConcurrency" },
+      { test: (navigator as any).deviceMemory === 0, name: "noDeviceMemory" },
+    ];
+    const detected = checks.filter((c) => c.test);
+    if (detected.length > 1) {
+      setIsAutomated(true);
+      onViolationRef.current?.("AUTOMATION_DETECTED", `Automation detected: ${detected.map((d) => d.name).join(", ")}`);
+      onTerminateRef.current?.("Automation/headless browser detected");
+    }
+  }, []);
 
   useEffect(() => {
     if (!enabledRef.current) return;
 
     const debugInterval = setInterval(() => {
       detectDevTools();
-      detectConsoleOpen();
     }, 2000);
 
     detectAutomation();
 
-    const resizeHandler = () => detectDevTools();
+    const resizeHandler = () => {
+      const currentWidth = window.outerWidth;
+      const currentHeight = window.outerHeight;
+      const dw = Math.abs(currentWidth - lastWidthRef.current);
+      const dh = Math.abs(currentHeight - lastHeightRef.current);
+      const suspiciousResize = (dw > 200 && dh < 20) || (dh > 200 && dw < 20);
+      if (suspiciousResize && enabledRef.current) {
+        setUndockedDetected(true);
+        onViolationRef.current?.("DEVELOPER_TOOLS", "Suspicious window resize pattern - undocked DevTools");
+      }
+      lastWidthRef.current = currentWidth;
+      lastHeightRef.current = currentHeight;
+    };
     window.addEventListener("resize", resizeHandler);
 
     return () => {
       clearInterval(debugInterval);
       window.removeEventListener("resize", resizeHandler);
     };
-  }, [detectDevTools, detectAutomation, detectConsoleOpen]);
+  }, []);
 
   const enable = useCallback(() => { enabledRef.current = true; }, []);
   const disable = useCallback(() => {
     enabledRef.current = false;
     setDevToolsOpen(false);
-    setConsoleOpen(false);
+    setUndockedDetected(false);
+    setIsAutomated(false);
   }, []);
 
   const runIntegrityCheck = useCallback(() => {
     detectDevTools();
     detectAutomation();
-    detectConsoleOpen();
-    return { devToolsOpen, consoleOpen, isAutomated };
-  }, [detectDevTools, detectAutomation, detectConsoleOpen, devToolsOpen, consoleOpen, isAutomated]);
+    return { devToolsOpen, undockedDetected, isAutomated };
+  }, []);
 
   return {
     devToolsOpen,
-    consoleOpen,
+    undockedDetected,
     isAutomated,
     enable,
     disable,

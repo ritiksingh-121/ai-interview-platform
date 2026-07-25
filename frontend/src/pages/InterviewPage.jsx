@@ -14,6 +14,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import SecureInterviewMode from "../components/SecureInterview/SecureInterviewMode";
 import { useCameraStream } from "../context/CameraContext";
+import ExitConfirmationModal from "../components/ui/ExitConfirmationModal";
+import useExitHandler from "../hooks/useExitHandler";
 
 const ROLE_MAP = {
   "Frontend Developer": "FRONTEND",
@@ -68,10 +70,19 @@ export default function InterviewPage() {
   const lastTranscriptRef = useRef("");
   const streamRef = useRef(null);
   const timerRef = useRef(null);
+  const pendingFirstReplyRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
   useEffect(() => () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); }, []);
+  useEffect(() => {
+    if (!isInterviewStarted) {
+      window.speechSynthesis?.cancel();
+      isSpeakingRef.current = false;
+      stopListening();
+      abortListening();
+    }
+  }, [isInterviewStarted]);
 
   useEffect(() => {
     if (isInterviewStarted) {
@@ -79,6 +90,17 @@ export default function InterviewPage() {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isInterviewStarted]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (document.fullscreenElement && pendingFirstReplyRef.current) {
+        speak(pendingFirstReplyRef.current);
+        pendingFirstReplyRef.current = null;
+      }
+    };
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const saveInterviewSession = async () => {
     const user = auth.currentUser;
@@ -171,7 +193,7 @@ export default function InterviewPage() {
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
     utterance.onend = () => {
-      if (wasListening) setTimeout(() => { if (!isSpeakingRef.current) startListening(); }, 400);
+      if (wasListening && isInterviewStartedRef.current) setTimeout(() => { if (!isSpeakingRef.current) startListening(); }, 400);
       isSpeakingRef.current = false;
     };
   };
@@ -217,7 +239,11 @@ export default function InterviewPage() {
         personality,
       });
       setMessages([{ role: "assistant", content: data.reply }]);
-      speak(data.reply);
+      if (secureMode) {
+        pendingFirstReplyRef.current = data.reply;
+      } else {
+        speak(data.reply);
+      }
     } catch (err) { console.error("Failed to start session:", err); }
     setLoading(false);
   };
@@ -247,6 +273,23 @@ export default function InterviewPage() {
   };
 
   const user = auth.currentUser;
+
+  const { showExitDialog, openExitDialog, closeExitDialog, handleConfirmExit } = useExitHandler({
+    onExit: async () => {
+      window.speechSynthesis?.cancel();
+      isSpeakingRef.current = false;
+      stopListening();
+      abortListening();
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (isInterviewStarted) {
+        try {
+          const saved = await saveInterviewSession();
+          if (saved) setInterviewSavedId(saved.id);
+        } catch {}
+      }
+    },
+    navigateTo: "/dashboard",
+  });
 
   const secureContent = (
     <div className="h-dvh flex flex-col bg-zinc-950 text-zinc-100 overflow-x-hidden pt-16">
@@ -306,20 +349,18 @@ export default function InterviewPage() {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={async () => {
-                    if (confirm("End current interview session? It will be saved to your history.")) {
-                      await saveInterviewSession();
-                      setIsInterviewStarted(false);
-                      setMessages([]);
-                      setTimeElapsed(0);
-                      if (timerRef.current) clearInterval(timerRef.current);
-                    }
-                  }}
+                  onClick={openExitDialog}
                 >
                   End Session
                 </Button>
               </>
             )}
+            <button
+              onClick={openExitDialog}
+              className="px-2.5 py-1.5 text-[11px] rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all font-medium"
+            >
+              Exit
+            </button>
           </div>
         </div>
       </header>
@@ -383,14 +424,28 @@ export default function InterviewPage() {
                 </div>
               </div>
 
-              <AudioWaveform active={listening} label="Speech Visualizer" />
-
               <Card variant="glass" className="p-4 space-y-2 text-xs text-zinc-400">
-                <h4 className="font-semibold text-zinc-200 uppercase tracking-wider text-[10px]">Session Info</h4>
-                <p>Company: <span className="text-zinc-300">{company}</span></p>
-                <p>Personality: <span className="text-zinc-300">{personality}</span></p>
-                <p>Role: <span className="text-zinc-300">{role}</span></p>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-zinc-200 uppercase tracking-wider text-[10px]">Session Integrity</h4>
+                  {secureViolations > 0 && (
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${secureViolations >= 5 ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>
+                      {secureViolations} violation{secureViolations !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  {secureViolations === 0 && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
+                      Clean
+                    </span>
+                  )}
+                </div>
+                <div className="pt-1 space-y-1">
+                  <p>Company: <span className="text-zinc-300">{company}</span></p>
+                  <p>Personality: <span className="text-zinc-300">{personality}</span></p>
+                  <p>Role: <span className="text-zinc-300">{role}</span></p>
+                </div>
               </Card>
+
+              <SpeechRecognitionCard listening={listening} onStart={startListening} onStop={stopListening} />
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950/40">
@@ -483,6 +538,12 @@ export default function InterviewPage() {
           </div>
         )}
       </main>
+
+      <ExitConfirmationModal
+        isOpen={showExitDialog}
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
     </div>
   );
 
@@ -502,5 +563,34 @@ export default function InterviewPage() {
     </SecureInterviewMode>
   ) : (
     secureContent
+  );
+}
+
+function SpeechRecognitionCard({ listening, onStart, onStop }) {
+  return (
+    <Card variant="glass" className="p-4 space-y-3 text-xs">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-zinc-200 uppercase tracking-wider text-[10px]">Speech Recognition</h4>
+        <span className={`flex items-center gap-1.5 text-[10px] font-medium ${listening ? "text-emerald-400" : "text-zinc-500"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${listening ? "bg-emerald-400 animate-ping" : "bg-zinc-600"}`} />
+          {listening ? "Listening" : "Idle"}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={listening ? onStop : onStart}
+          className={`p-2 rounded-lg border transition-all cursor-pointer ${
+            listening
+              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+              : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
+        <span className="text-zinc-500">{listening ? "Tap to stop" : "Tap to start"} voice input</span>
+      </div>
+    </Card>
   );
 }

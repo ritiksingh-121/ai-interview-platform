@@ -100,7 +100,7 @@ model User {
   achievements      Achievement[]
   githubAnalyses    GitHubAnalysis[]
   portfolioAnalyses PortfolioAnalysis[]
-  answers Answer[]
+  answers           Answer[]
   proctoringSessions ProctoringSession[]
 }
 
@@ -134,10 +134,10 @@ model Interview {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  messages InterviewMessage[]
-  feedback Feedback[]
-  questions Question[]
-  invites InterviewInvite[]
+  messages           InterviewMessage[]
+  feedback           Feedback[]
+  questions          Question[]
+  invites            InterviewInvite[]
   proctoringSessions ProctoringSession[]
 }
 
@@ -460,9 +460,11 @@ enum ViolationType {
   BACKGROUND_SPEECH
   DEVELOPER_TOOLS
   VIEWPORT_RESIZE
+  VIEWPORT_ZOOM
   CONSOLE_OPEN
   DEBUGGER_PAUSE
   NETWORK_OFFLINE
+  NETWORK_LATENCY
   VPN_DETECTED
   COPY_PASTE
   SCREENSHOT
@@ -474,6 +476,22 @@ enum ViolationType {
   AUTOMATION_DETECTED
   HEADLESS_BROWSER
   EMULATOR_DETECTED
+  CAMERA_FREEZE
+  MIC_DISCONNECTED
+  MIC_MUTED
+  AUDIO_NOISE
+  LOW_LIGHT
+  EYE_GAZE_AWAY
+  HEAD_POSE_DOWN
+  HEAD_POSE_LEFT
+  HEAD_POSE_RIGHT
+  PRINT_SCREEN
+  TEXT_SELECTION
+  DRAG_DROP
+  CONTEXT_MENU
+  UNKNOWN_OBJECT
+  EARPHONE_DETECTED
+  SMARTWATCH_DETECTED
 }
 
 enum ProctoringStatus {
@@ -503,6 +521,7 @@ model ProctoringSession {
   tabSwitchCount  Int             @default(0)
   fullscreenExits Int             @default(0)
   faceCapture     String?
+  startTimestamp  Int?
   startedAt       DateTime        @default(now())
   terminatedAt    DateTime?
   terminationReason String?
@@ -512,6 +531,9 @@ model ProctoringSession {
   violations      Violation[]
   snapshots       ProctoringSnapshot[]
   adminActions    AdminAction[]
+  candidatePhotos CandidatePhoto[]
+  objectDetections ObjectDetection[]
+  cameraSnapshots CameraSnapshot[]
 }
 
 model Violation {
@@ -540,6 +562,42 @@ model ProctoringSnapshot {
   type            String
   data            String?
   imageUrl        String?
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+}
+
+model CandidatePhoto {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         ProctoringSession @relation(fields: [sessionId], references: [id])
+  imageData       String
+  capturedAt      DateTime @default(now())
+  retryCount      Int      @default(0)
+  success         Boolean  @default(true)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+}
+
+model CameraSnapshot {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         ProctoringSession @relation(fields: [sessionId], references: [id])
+  imageData       String
+  trigger         String
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+}
+
+model ObjectDetection {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         ProctoringSession @relation(fields: [sessionId], references: [id])
+  objectLabel     String
+  confidence      Float
+  boxX            Float?
+  boxY            Float?
+  boxWidth        Float?
+  boxHeight       Float?
   timestamp       DateTime @default(now())
   createdAt       DateTime @default(now())
 }

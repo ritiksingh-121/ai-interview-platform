@@ -3,51 +3,21 @@ export function checkBrowserSecurity(): {
   issues: string[];
 } {
   const issues: string[] = [];
-
-  if (!navigator.mediaDevices?.getUserMedia) {
-    issues.push("Camera/Microphone not available");
-  }
-
-  if (!("Fullscreen API" in document || "webkitFullscreenElement" in document)) {
-    issues.push("Fullscreen API not supported");
-  }
-
-  if (!navigator.onLine) {
-    issues.push("Browser is offline");
-  }
-
-  if (!window.crypto?.subtle) {
-    issues.push("Secure crypto not available");
-  }
-
-  if (!("serviceWorker" in navigator)) {
-    issues.push("Service Workers not supported");
-  }
-
-  const isLocalStorage = typeof localStorage !== "undefined";
-  if (!isLocalStorage) {
-    issues.push("Local storage not available");
-  }
-
-  const isSessionStorage = typeof sessionStorage !== "undefined";
-  if (!isSessionStorage) {
-    issues.push("Session storage not available");
-  }
-
-  return {
-    secure: issues.length === 0,
-    issues,
-  };
+  if (!navigator.mediaDevices?.getUserMedia) issues.push("Camera/Microphone not available");
+  if (!("Fullscreen API" in document || "webkitFullscreenElement" in document || "mozFullScreenElement" in document)) issues.push("Fullscreen API not supported");
+  if (!navigator.onLine) issues.push("Browser is offline");
+  if (!window.crypto?.subtle) issues.push("Secure crypto not available");
+  if (!("serviceWorker" in navigator)) issues.push("Service Workers not supported");
+  if (typeof localStorage === "undefined") issues.push("Local storage not available");
+  if (typeof sessionStorage === "undefined") issues.push("Session storage not available");
+  return { secure: issues.length === 0, issues };
 }
 
 export function checkSuspiciousTiming(): boolean {
   const startTime = performance.now();
   let result = 0;
-  for (let i = 0; i < 100000; i++) {
-    result += Math.sqrt(i);
-  }
-  const elapsed = performance.now() - startTime;
-  return elapsed > 500;
+  for (let i = 0; i < 100000; i++) result += Math.sqrt(i);
+  return performance.now() - startTime > 500;
 }
 
 export function checkWebDriver(): boolean {
@@ -67,17 +37,8 @@ export function checkHeadless(): boolean {
 
 export function checkEmulator(): boolean {
   const userAgent = navigator.userAgent.toLowerCase();
-  const emulatorPatterns = [
-    "android.*emulator",
-    "android.*avd",
-    "iphone simulator",
-    "ios simulator",
-    "genymotion",
-    "bluestacks",
-    "nox player",
-    "memu",
-  ];
-  return emulatorPatterns.some((p) => new RegExp(p).test(userAgent));
+  const patterns = ["android.*emulator", "android.*avd", "iphone simulator", "ios simulator", "genymotion", "bluestacks", "nox player", "memu"];
+  return patterns.some((p) => new RegExp(p).test(userAgent));
 }
 
 export function checkDebugger(): boolean {
@@ -88,14 +49,9 @@ export function checkDebugger(): boolean {
 
 export function getBrowserFingerprint(): string {
   const components = [
-    navigator.userAgent,
-    navigator.language,
-    navigator.platform,
-    navigator.hardwareConcurrency,
-    (navigator as any).deviceMemory,
-    screen.colorDepth,
-    screen.width,
-    screen.height,
+    navigator.userAgent, navigator.language, navigator.platform,
+    navigator.hardwareConcurrency, (navigator as any).deviceMemory,
+    screen.colorDepth, screen.width, screen.height,
     new Date().getTimezoneOffset(),
   ];
   const str = components.join("|||");

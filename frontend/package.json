@@ -15,8 +15,12 @@
     "vite": "^8.0.14"
   },
   "dependencies": {
+    "@mediapipe/face_mesh": "^0.4.1633559619",
     "@monaco-editor/react": "^4.7.0",
     "@stripe/stripe-js": "^9.6.0",
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@tensorflow-models/face-landmarks-detection": "^1.0.6",
+    "@tensorflow/tfjs": "^4.22.0",
     "firebase": "^12.13.0",
     "framer-motion": "^12.40.0",
     "openai": "^6.34.0",
